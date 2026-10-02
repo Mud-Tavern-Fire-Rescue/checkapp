@@ -10,3 +10,10 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 }
+
+declare module "@auth/core/adapters" {
+  interface AdapterUser {
+    role: Role;
+    isActive: boolean;
+  }
+}
