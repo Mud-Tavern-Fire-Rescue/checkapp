@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  OFFICER
+}
+
+enum CheckStatus {
+  PASS
+  FAIL
+}
+
+enum ItemResultStatus {
+  PASS
+  FAIL
+  NA
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// --- Auth.js (next-auth v5) Prisma adapter models ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Application models ---
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String
+  image         String?
+  googleId      String?   @unique
+  role          Role      @default(MEMBER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  submissions CheckSubmission[] @relation("SubmittedBy")
+
+  @@index([role])
+}
+
+model Apparatus {
+  id         String   @id @default(cuid())
+  name       String
+  unitNumber String?  @unique
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  equipmentItems     EquipmentItem[]
+  checklistTemplates ChecklistTemplate[]
+  submissions        CheckSubmission[]
+}
+
+model EquipmentItem {
+  id          String     @id @default(cuid())
+  name        String
+  apparatusId String?
+  apparatus   Apparatus? @relation(fields: [apparatusId], references: [id])
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  checklistTemplates ChecklistTemplate[]
+  submissions        CheckSubmission[]
+
+  @@index([apparatusId])
+}
+
+// A template belongs to exactly one of Apparatus or EquipmentItem
+// (enforced in app logic via Zod, not at the DB layer).
+model ChecklistTemplate {
+  id              String         @id @default(cuid())
+  name            String
+  apparatusId     String?
+  apparatus       Apparatus?     @relation(fields: [apparatusId], references: [id])
+  equipmentItemId String?
+  equipmentItem   EquipmentItem? @relation(fields: [equipmentItemId], references: [id])
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  items       ChecklistItem[]
+  submissions CheckSubmission[]
+
+  @@index([apparatusId])
+  @@index([equipmentItemId])
+}
+
+model ChecklistItem {
+  id         String            @id @default(cuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  label      String
+  sortOrder  Int               @default(0)
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+
+  results CheckItemResult[]
+
+  @@index([templateId])
+}
+
+// One completed check run.
+model CheckSubmission {
+  id         String            @id @default(cuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id])
+
+  // Denormalized from the template at submission time for fast dashboard filtering.
+  apparatusId     String?
+  apparatus       Apparatus?     @relation(fields: [apparatusId], references: [id])
+  equipmentItemId String?
+  equipmentItem   EquipmentItem? @relation(fields: [equipmentItemId], references: [id])
+
+  submittedById String
+  submittedBy   User     @relation("SubmittedBy", fields: [submittedById], references: [id])
+  submittedAt   DateTime @default(now())
+
+  overallStatus CheckStatus
+  notes         String?
+
+  itemResults CheckItemResult[]
+  alerts      FailureAlert[]
+
+  @@index([apparatusId, submittedAt])
+  @@index([equipmentItemId, submittedAt])
+  @@index([submittedById])
+  @@index([overallStatus])
+}
+
+model CheckItemResult {
+  id              String           @id @default(cuid())
+  submissionId    String
+  submission      CheckSubmission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  checklistItemId String
+  checklistItem   ChecklistItem    @relation(fields: [checklistItemId], references: [id])
+  status          ItemResultStatus
+  note            String?
+
+  @@index([submissionId])
+  @@index([checklistItemId])
+}
+
+// One row per failure-triggered email attempt (audit trail + retry hook).
+model FailureAlert {
+  id              String          @id @default(cuid())
+  submissionId    String
+  submission      CheckSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  recipientEmails String[]
+  status          AlertStatus     @default(PENDING)
+  attempts        Int             @default(0)
+  lastError       String?
+  sentAt          DateTime?
+  createdAt       DateTime        @default(now())
+
+  @@index([submissionId])
+  @@index([status])
+}
