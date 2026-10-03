@@ -26,7 +26,8 @@ export default auth((req) => {
   return NextResponse.next();
 });
 
+// Proxy always runs on the Node.js runtime in Next 16, which database
+// sessions need.
 export const config = {
-  runtime: "nodejs",
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

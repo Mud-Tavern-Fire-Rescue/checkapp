@@ -23,15 +23,15 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 
 - Next.js 16 (App Router), React 19, Tailwind 4, TypeScript. Read `node_modules/next/dist/docs/` before using Next APIs (see AGENTS.md).
 - Postgres on Neon, via Prisma **6**. Do not upgrade to Prisma 7: `@auth/prisma-adapter` doesn't support it yet.
-- Auth.js (next-auth v5 beta) with the Prisma adapter and **database sessions**, so role changes take effect immediately. Middleware runs on the Node.js runtime for this reason.
+- Auth.js (next-auth v5 beta) with the Prisma adapter and **database sessions**, so role changes take effect immediately. The proxy (`src/proxy.ts`, formerly middleware) runs on Node.js, which this needs.
 - Email alerts via nodemailer over SMTP. Locally, `npm run mail:dev` starts maildev to catch mail (no Docker on this Mac).
 - Node is installed with nvm (no Homebrew Node).
 
 ## Sign-in rules (`src/auth.ts`)
 
-- Google accounts only, restricted to `WORKSPACE_DOMAIN` (fails closed if unset).
-- `DEV_ALLOW_ANY_DOMAIN=true` allows personal Gmail locally. Never set it in production.
-- Users are pre-created (seeded) and matched to their Google account by email on first sign-in.
+- Google accounts only. Only people an officer has added in Admin > People (active, Google-verified email) can sign in; everyone else gets "Access denied." No one is created automatically.
+- New people are matched to their Google account by email on first sign-in.
+- While the Google OAuth app is in Testing mode, each person must also be a test user in Google Cloud.
 
 ## Data model (`prisma/schema.prisma`)
 
@@ -72,7 +72,6 @@ To do:
 - Officer review: filter and browse all checks, not just recent failures
 - Add the other officers (Ennis, Adams, Joseph) through `/admin/people` once their Google emails are known
 - Admin: renaming apparatus/equipment and moving equipment between trucks
-- Rename `src/middleware.ts` to `src/proxy.ts` (Next 16 deprecation)
 - Hosting, and linking from mudtavernfire.org
 
 ## Working rules
