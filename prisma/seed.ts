@@ -3,16 +3,20 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const officer = await prisma.user.upsert({
-    where: { email: "officer@example.com" },
-    update: { role: "OFFICER" },
-    create: {
-      email: "officer@example.com",
-      name: "Mike Russell",
-      role: "OFFICER",
-    },
-  });
-  console.log(`Seeded officer: ${officer.email}`);
+  // The first officer comes from .env so no one's email lives in the repo.
+  // After that, officers add everyone else in Admin > People.
+  const officerEmail = process.env.SEED_OFFICER_EMAIL?.trim().toLowerCase();
+  const officerName = process.env.SEED_OFFICER_NAME?.trim();
+  if (officerEmail && officerName) {
+    const officer = await prisma.user.upsert({
+      where: { email: officerEmail },
+      update: { role: "OFFICER" },
+      create: { email: officerEmail, name: officerName, role: "OFFICER" },
+    });
+    console.log(`Seeded officer: ${officer.email}`);
+  } else {
+    console.log("SEED_OFFICER_EMAIL/SEED_OFFICER_NAME not set; skipping officer.");
+  }
 
   const engine1 = await prisma.apparatus.upsert({
     where: { unitNumber: "E1" },

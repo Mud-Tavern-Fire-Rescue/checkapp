@@ -47,7 +47,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 - `npm run dev`: dev server
 - `npm run build`, `npm run lint`, `npx tsc --noEmit`: verify before committing
 - `npx prisma migrate dev --name <name>`: schema changes (runs against Neon)
-- `npm run db:seed`: seed users, apparatus, and checklists
+- `npm run db:seed`: seed apparatus and checklists, plus the first officer from `SEED_OFFICER_EMAIL` / `SEED_OFFICER_NAME` in `.env`
 
 ## Secrets
 
@@ -78,4 +78,5 @@ To do:
 
 - Use a branch per feature; don't commit straight to `main`.
 - Never put incident or patient details in check notes or sample data.
+- Never put personal email addresses in code; the repo is public. Commits use the GitHub noreply address.
 - Add new use cases to the Requirements and Status sections above as they come up.
