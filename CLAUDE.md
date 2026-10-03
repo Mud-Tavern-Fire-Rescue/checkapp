@@ -49,6 +49,16 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 - `npx prisma migrate dev --name <name>`: schema changes (runs against Neon)
 - `npm run db:seed`: seed apparatus and checklists, plus the first officer from `SEED_OFFICER_EMAIL` / `SEED_OFFICER_NAME` in `.env`
 
+## Hosting
+
+- Live at https://checks.mudtavernfire.org (Vercel Hobby, project `checkapp`; also `checkapp-eight.vercel.app`). Every push to `main` deploys automatically.
+- The repo is **public** (Vercel Hobby can't deploy private org repos). Keep secrets and personal emails out of it.
+- DNS: CNAME `checks` in Cloudflare (DNS only, gray cloud) pointing at Vercel.
+- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`. Changing one requires a redeploy.
+- Production and local development share the same Neon database.
+- Schema changes: run `npx prisma migrate dev` locally (applies to Neon) before merging code that needs it.
+- Linked from mudtavernfire.org under MEMBERS → EQUIPMENT CHECKS.
+
 ## Secrets
 
 `.env` is gitignored and holds the database URL, Auth.js, Google OAuth, and SMTP settings. Never commit it or print its values.
@@ -72,7 +82,6 @@ To do:
 - Officer review: filter and browse all checks, not just recent failures
 - Add the other officers (Ennis, Adams, Joseph) through `/admin/people` once their Google emails are known
 - Admin: renaming apparatus/equipment and moving equipment between trucks
-- Hosting, and linking from mudtavernfire.org
 
 ## Working rules
 
