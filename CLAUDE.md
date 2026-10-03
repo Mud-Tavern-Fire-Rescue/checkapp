@@ -63,14 +63,15 @@ Done:
 - `/checks`: list of checklists with last check and "Due" (none in 7 days) / "Failed" badges; `/` redirects here
 - `/checks/[templateId]`: Pass/Fail/N/A per item, note required on failures, saves a `CheckSubmission`
 - Failure alerts: on a failed check, emails all active officers and records a `FailureAlert` row (`src/lib/alerts.ts`); email errors never block saving the check
+- `/admin` (officers only): People (add, make officer/member, deactivate; can't change your own role or deactivate yourself), Apparatus & Equipment (add, deactivate), Checklists (create for a truck or item; add, rename, reorder, remove, restore items). Nothing is deleted, only deactivated. Admin server actions are in `src/app/admin/actions.ts`, each guarded by `requireOfficer()`.
 
 To do:
-- Google OAuth credentials: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env` are empty, so nobody can sign in yet
+- Google OAuth for production: the local client is in Testing mode (only listed test users can sign in, redirect URI is localhost); production needs its redirect URI added and the app published
 - Production SMTP settings (`.env` currently points at local maildev on port 1025)
 - Retry `FailureAlert` rows with status FAILED
 - Officer review: filter and browse all checks, not just recent failures
-- `/admin`: manage users, apparatus, equipment, and checklists
-- Seed the real officers once their Google account emails are known
+- Add the other officers (Ennis, Adams, Joseph) through `/admin/people` once their Google emails are known
+- Admin: renaming apparatus/equipment and moving equipment between trucks
 - Rename `src/middleware.ts` to `src/proxy.ts` (Next 16 deprecation)
 - Hosting, and linking from mudtavernfire.org
 

@@ -21,9 +21,14 @@ export async function SiteHeader() {
             Checks
           </Link>
           {role === "OFFICER" && (
-            <Link href="/officer" className="text-gray-600 hover:text-black">
-              Officer
-            </Link>
+            <>
+              <Link href="/officer" className="text-gray-600 hover:text-black">
+                Officer
+              </Link>
+              <Link href="/admin" className="text-gray-600 hover:text-black">
+                Admin
+              </Link>
+            </>
           )}
         </nav>
 
