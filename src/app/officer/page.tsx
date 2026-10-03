@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireOfficer } from "@/lib/auth-helpers";
+import { formatDateTime } from "@/lib/format";
 import { OFFICERS } from "@/lib/officers";
 import { prisma } from "@/lib/prisma";
 
@@ -49,11 +50,7 @@ export default async function OfficerPage() {
               <li key={submission.id} className="px-4 py-3 text-sm">
                 <p className="font-medium">{submission.template.name}</p>
                 <p className="text-gray-500">
-                  {submission.submittedAt.toLocaleString("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                    timeZone: "America/Chicago",
-                  })}{" "}
+                  {formatDateTime(submission.submittedAt)}{" "}
                   by {submission.submittedBy.name}
                 </p>
                 {submission.notes && (

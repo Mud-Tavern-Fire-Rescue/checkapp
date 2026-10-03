@@ -43,6 +43,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 
 ## Commands
 
+- `.claude/launch.json` defines `dev` (port 3000) and `maildev` (web UI on port 1080, SMTP on 1025)
 - `npm run dev`: dev server
 - `npm run build`, `npm run lint`, `npx tsc --noEmit`: verify before committing
 - `npx prisma migrate dev --name <name>`: schema changes (runs against Neon)
@@ -59,10 +60,14 @@ Done:
 - Google sign-in, route protection, sign-in page
 - Site header with sign-out
 - `/officer` page: officer roster and recent failed checks
+- `/checks`: list of checklists with last check and "Due" (none in 7 days) / "Failed" badges; `/` redirects here
+- `/checks/[templateId]`: Pass/Fail/N/A per item, note required on failures, saves a `CheckSubmission`
+- Failure alerts: on a failed check, emails all active officers and records a `FailureAlert` row (`src/lib/alerts.ts`); email errors never block saving the check
 
 To do:
-- `/checks`: pick an apparatus or item and complete its checklist (members land here after sign-in)
-- Save submissions and send failure alerts to officers (write `FailureAlert` rows)
+- Google OAuth credentials: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env` are empty, so nobody can sign in yet
+- Production SMTP settings (`.env` currently points at local maildev on port 1025)
+- Retry `FailureAlert` rows with status FAILED
 - Officer review: filter and browse all checks, not just recent failures
 - `/admin`: manage users, apparatus, equipment, and checklists
 - Seed the real officers once their Google account emails are known
