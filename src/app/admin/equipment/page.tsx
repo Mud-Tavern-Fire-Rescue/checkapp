@@ -49,7 +49,7 @@ export default async function EquipmentPage() {
             >
               <p className="font-medium">
                 {a.name}
-                {a.unitNumber && (
+                {a.unitNumber && a.unitNumber !== a.name && (
                   <span className="ml-2 text-sm font-normal text-gray-500">{a.unitNumber}</span>
                 )}
                 {!a.isActive && <span className="ml-2 text-xs">(inactive)</span>}

@@ -25,7 +25,7 @@ export default async function RunCheckPage({
       items: {
         where: { isActive: true },
         orderBy: { sortOrder: "asc" },
-        select: { id: true, label: true },
+        select: { id: true, label: true, section: true },
       },
     },
   });

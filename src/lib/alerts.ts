@@ -27,7 +27,7 @@ export async function sendFailureAlert(submissionId: string): Promise<void> {
         submittedBy: { select: { name: true } },
         itemResults: {
           where: { status: "FAIL" },
-          include: { checklistItem: { select: { label: true, sortOrder: true } } },
+          include: { checklistItem: { select: { label: true, section: true, sortOrder: true } } },
         },
       },
     }),
@@ -54,7 +54,10 @@ export async function sendFailureAlert(submissionId: string): Promise<void> {
   const target = submission.apparatus?.name ?? submission.equipmentItem?.name ?? submission.template.name;
   const failedLines = submission.itemResults
     .sort((a, b) => a.checklistItem.sortOrder - b.checklistItem.sortOrder)
-    .map((r) => `- ${r.checklistItem.label}: ${r.note ?? "(no note)"}`);
+    .map((r) => {
+      const { section, label } = r.checklistItem;
+      return `- ${section ? `${section}: ` : ""}${label}: ${r.note ?? "(no note)"}`;
+    });
 
   const appUrl = process.env.NEXTAUTH_URL ?? "";
   const text = [

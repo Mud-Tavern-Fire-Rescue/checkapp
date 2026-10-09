@@ -170,6 +170,7 @@ const createTemplateSchema = z.object({
   target: z
     .string()
     .regex(/^(apparatus|equipment):.+$/, "Choose what this checklist is for."),
+  frequency: z.enum(["WEEKLY", "MONTHLY"]),
 });
 
 export async function createTemplate(
@@ -184,6 +185,7 @@ export async function createTemplate(
   const template = await prisma.checklistTemplate.create({
     data: {
       name: parsed.data.name,
+      frequency: parsed.data.frequency,
       apparatusId: kind === "apparatus" ? id : null,
       equipmentItemId: kind === "equipment" ? id : null,
     },
@@ -191,18 +193,23 @@ export async function createTemplate(
   redirect(`/admin/checklists/${template.id}`);
 }
 
-export async function renameTemplate(
+const updateTemplateSchema = z.object({
+  name: nameSchema,
+  frequency: z.enum(["WEEKLY", "MONTHLY"]),
+});
+
+export async function updateTemplate(
   templateId: string,
   _state: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
   await requireOfficer();
-  const parsed = nameSchema.safeParse(formData.get("name"));
+  const parsed = updateTemplateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: firstError(parsed.error) };
 
   await prisma.checklistTemplate.update({
     where: { id: templateId },
-    data: { name: parsed.data },
+    data: parsed.data,
   });
   refresh();
   return {};
@@ -221,7 +228,37 @@ export async function setTemplateActive(
   return {};
 }
 
-const itemLabelSchema = z.string().trim().min(1, "Item text is required.").max(200);
+const itemSchema = z.object({
+  label: z.string().trim().min(1, "Item text is required.").max(200),
+  section: z
+    .string()
+    .trim()
+    .max(100)
+    .transform((v) => v || null),
+});
+
+// Moves an item to just after the last active item in its section (or the
+// end of the list for a new section) and renumbers the whole checklist, so
+// sections stay together and sortOrder has no gaps.
+async function placeAtEndOfSection(itemId: string) {
+  const item = await prisma.checklistItem.findUniqueOrThrow({
+    where: { id: itemId },
+    select: { templateId: true, section: true },
+  });
+  const others = await prisma.checklistItem.findMany({
+    where: { templateId: item.templateId, isActive: true, id: { not: itemId } },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: { id: true, section: true },
+  });
+  const lastInSection = others.findLastIndex((i) => i.section === item.section);
+  const insertAt = lastInSection === -1 ? others.length : lastInSection + 1;
+  const ordered = [...others.slice(0, insertAt), { id: itemId }, ...others.slice(insertAt)];
+  await prisma.$transaction(
+    ordered.map((i, sortOrder) =>
+      prisma.checklistItem.update({ where: { id: i.id }, data: { sortOrder } }),
+    ),
+  );
+}
 
 export async function addChecklistItem(
   templateId: string,
@@ -229,17 +266,16 @@ export async function addChecklistItem(
   formData: FormData,
 ): Promise<AdminActionState> {
   await requireOfficer();
-  const parsed = itemLabelSchema.safeParse(formData.get("label"));
+  const parsed = itemSchema.safeParse({
+    label: formData.get("label"),
+    section: formData.get("section") ?? "",
+  });
   if (!parsed.success) return { error: firstError(parsed.error) };
 
-  const last = await prisma.checklistItem.findFirst({
-    where: { templateId },
-    orderBy: { sortOrder: "desc" },
-    select: { sortOrder: true },
+  const item = await prisma.checklistItem.create({
+    data: { templateId, ...parsed.data },
   });
-  await prisma.checklistItem.create({
-    data: { templateId, label: parsed.data, sortOrder: (last?.sortOrder ?? -1) + 1 },
-  });
+  await placeAtEndOfSection(item.id);
   refresh();
   return {};
 }
@@ -250,13 +286,20 @@ export async function updateChecklistItem(
   formData: FormData,
 ): Promise<AdminActionState> {
   await requireOfficer();
-  const parsed = itemLabelSchema.safeParse(formData.get("label"));
+  const parsed = itemSchema.safeParse({
+    label: formData.get("label"),
+    section: formData.get("section") ?? "",
+  });
   if (!parsed.success) return { error: firstError(parsed.error) };
 
-  await prisma.checklistItem.update({
+  const before = await prisma.checklistItem.findUniqueOrThrow({
     where: { id: itemId },
-    data: { label: parsed.data },
+    select: { section: true },
   });
+  await prisma.checklistItem.update({ where: { id: itemId }, data: parsed.data });
+  if (before.section !== parsed.data.section) {
+    await placeAtEndOfSection(itemId);
+  }
   refresh();
   return {};
 }
@@ -266,30 +309,17 @@ export async function setChecklistItemActive(
   isActive: boolean,
 ): Promise<AdminActionState> {
   await requireOfficer();
-  let sortOrder: number | undefined;
+  await prisma.checklistItem.update({ where: { id: itemId }, data: { isActive } });
   if (isActive) {
-    // Restored items go to the end of the list.
-    const item = await prisma.checklistItem.findUniqueOrThrow({
-      where: { id: itemId },
-      select: { templateId: true },
-    });
-    const last = await prisma.checklistItem.findFirst({
-      where: { templateId: item.templateId, isActive: true },
-      orderBy: { sortOrder: "desc" },
-      select: { sortOrder: true },
-    });
-    sortOrder = (last?.sortOrder ?? -1) + 1;
+    // Restored items go back to the end of their section.
+    await placeAtEndOfSection(itemId);
   }
-  await prisma.checklistItem.update({
-    where: { id: itemId },
-    data: { isActive, sortOrder },
-  });
   refresh();
   return {};
 }
 
-// Swaps an active item with its active neighbor and renumbers the whole
-// list, so sortOrder stays clean even if older data has gaps or ties.
+// Swaps an active item with its neighbor in the same section and renumbers
+// the whole list, so sortOrder stays clean even if older data has gaps or ties.
 export async function moveChecklistItem(
   itemId: string,
   direction: "up" | "down",
@@ -302,12 +332,13 @@ export async function moveChecklistItem(
   const items = await prisma.checklistItem.findMany({
     where: { templateId: item.templateId, isActive: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    select: { id: true },
+    select: { id: true, section: true },
   });
 
   const index = items.findIndex((i) => i.id === itemId);
   const swapWith = direction === "up" ? index - 1 : index + 1;
   if (index === -1 || swapWith < 0 || swapWith >= items.length) return {};
+  if (items[index].section !== items[swapWith].section) return {};
 
   [items[index], items[swapWith]] = [items[swapWith], items[index]];
   await prisma.$transaction(

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
+    "checklists:import": "tsx --env-file=.env scripts/import-checklists.ts",
     "mail:dev": "maildev"
   },
   "prisma": {

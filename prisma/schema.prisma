@@ -23,6 +23,11 @@ enum ItemResultStatus {
   NA
 }
 
+enum CheckFrequency {
+  WEEKLY
+  MONTHLY
+}
+
 enum AlertStatus {
   PENDING
   SENT
@@ -125,6 +130,7 @@ model ChecklistTemplate {
   apparatus       Apparatus?     @relation(fields: [apparatusId], references: [id])
   equipmentItemId String?
   equipmentItem   EquipmentItem? @relation(fields: [equipmentItemId], references: [id])
+  frequency       CheckFrequency @default(WEEKLY)
   isActive        Boolean        @default(true)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -141,6 +147,8 @@ model ChecklistItem {
   templateId String
   template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   label      String
+  // Heading the item is grouped under when running a check (e.g. "Air brakes").
+  section    String?
   sortOrder  Int               @default(0)
   isActive   Boolean           @default(true)
   createdAt  DateTime          @default(now())

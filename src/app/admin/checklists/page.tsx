@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { FREQUENCY_LABEL } from "@/lib/schedule";
 import { ActionForm } from "../ActionForm";
 import { createTemplate } from "../actions";
 import { inputClass, primaryButtonClass } from "../ui";
@@ -15,7 +16,7 @@ export default async function ChecklistsPage() {
 
   const [templates, apparatus, equipment] = await Promise.all([
     prisma.checklistTemplate.findMany({
-      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      orderBy: [{ isActive: "desc" }, { name: "asc" }, { frequency: "asc" }],
       include: {
         apparatus: { select: { name: true, isActive: true } },
         equipmentItem: { select: { name: true, isActive: true } },
@@ -60,6 +61,10 @@ export default async function ChecklistsPage() {
               </optgroup>
             )}
           </select>
+          <select name="frequency" defaultValue="WEEKLY" aria-label="How often" className={inputClass}>
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY">Monthly</option>
+          </select>
           <button type="submit" className={primaryButtonClass}>
             Create and add items
           </button>
@@ -83,7 +88,8 @@ export default async function ChecklistsPage() {
                   <div>
                     <p className="font-medium">{template.name}</p>
                     <p className="text-sm text-gray-500">
-                      {target?.name} · {template._count.items} items
+                      {target?.name} · {FREQUENCY_LABEL[template.frequency]} ·{" "}
+                      {template._count.items} items
                     </p>
                   </div>
                   {hidden && (

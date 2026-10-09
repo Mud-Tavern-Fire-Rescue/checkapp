@@ -3,17 +3,17 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth-helpers";
 import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { isDue } from "@/lib/schedule";
 
 export const metadata: Metadata = {
   title: "Checks | Equipment Checks",
 };
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+type Group = Awaited<ReturnType<typeof getGroups>>[number];
 
-type Checklist = Awaited<ReturnType<typeof getChecklists>>[number];
-
-// A checklist is due if it hasn't been run in the last week.
-async function getChecklists() {
+// One group per vehicle or piece of equipment, each with its checklists
+// (weekly first, then monthly).
+async function getGroups() {
   const templates = await prisma.checklistTemplate.findMany({
     where: {
       isActive: true,
@@ -22,10 +22,10 @@ async function getChecklists() {
         { equipmentItem: { isActive: true } },
       ],
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ frequency: "asc" }, { name: "asc" }],
     include: {
-      apparatus: { select: { name: true } },
-      equipmentItem: { select: { name: true } },
+      apparatus: { select: { id: true, name: true, unitNumber: true } },
+      equipmentItem: { select: { id: true, name: true } },
       submissions: {
         orderBy: { submittedAt: "desc" },
         take: 1,
@@ -34,44 +34,64 @@ async function getChecklists() {
     },
   });
 
-  const dueBefore = Date.now() - WEEK_MS;
-  return templates.map((template) => {
-    const last = template.submissions[0];
-    return {
+  const now = Date.now();
+  const groups = new Map<
+    string,
+    {
+      key: string;
+      name: string;
+      unitNumber: string | null;
+      kind: "apparatus" | "equipment";
+      checklists: (typeof templates[number] & { isDue: boolean })[];
+    }
+  >();
+
+  for (const template of templates) {
+    const target = template.apparatus ?? template.equipmentItem;
+    if (!target) continue;
+    const key = `${template.apparatus ? "a" : "e"}:${target.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        name: target.name,
+        unitNumber: template.apparatus?.unitNumber ?? null,
+        kind: template.apparatus ? "apparatus" : "equipment",
+        checklists: [],
+      });
+    }
+    groups.get(key)!.checklists.push({
       ...template,
-      isDue: !last || last.submittedAt.getTime() < dueBefore,
-    };
-  });
+      isDue: isDue(template.frequency, template.submissions[0]?.submittedAt, now),
+    });
+  }
+
+  return [...groups.values()].sort((a, b) =>
+    (a.unitNumber ?? a.name).localeCompare(b.unitNumber ?? b.name, undefined, {
+      numeric: true,
+    }),
+  );
 }
 
-export default async function ChecksPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ submitted?: string }>;
-}) {
-  await requireSession();
-  const { submitted } = await searchParams;
-
-  const templates = await getChecklists();
-
-  const apparatusTemplates = templates.filter((t) => t.apparatus);
-  const equipmentTemplates = templates.filter((t) => t.equipmentItem);
-
-  function renderList(list: Checklist[]) {
-    return (
-      <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
-        {list.map((template) => {
-          const last = template.submissions[0];
+function GroupCard({ group }: { group: Group }) {
+  return (
+    <section className="rounded-md border border-gray-200 bg-white">
+      <h3 className="border-b border-gray-200 px-4 py-2 font-semibold">
+        {group.name}
+        {group.unitNumber && group.unitNumber !== group.name && (
+          <span className="ml-2 text-sm font-normal text-gray-500">{group.unitNumber}</span>
+        )}
+      </h3>
+      <ul className="divide-y divide-gray-200">
+        {group.checklists.map((checklist) => {
+          const last = checklist.submissions[0];
           return (
-            <li key={template.id}>
+            <li key={checklist.id}>
               <Link
-                href={`/checks/${template.id}`}
+                href={`/checks/${checklist.id}`}
                 className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-gray-50"
               >
                 <div>
-                  <p className="font-medium">
-                    {template.apparatus?.name ?? template.equipmentItem?.name}
-                  </p>
+                  <p className="font-medium">{checklist.name}</p>
                   <p className="text-sm text-gray-500">
                     {last
                       ? `Last checked ${formatDateTime(last.submittedAt)} by ${last.submittedBy.name}`
@@ -84,7 +104,7 @@ export default async function ChecksPage({
                       Failed
                     </span>
                   )}
-                  {template.isDue && (
+                  {checklist.isDue && (
                     <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-800">
                       Due
                     </span>
@@ -95,12 +115,25 @@ export default async function ChecksPage({
           );
         })}
       </ul>
-    );
-  }
+    </section>
+  );
+}
+
+export default async function ChecksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ submitted?: string }>;
+}) {
+  await requireSession();
+  const { submitted } = await searchParams;
+
+  const groups = await getGroups();
+  const apparatus = groups.filter((g) => g.kind === "apparatus");
+  const equipment = groups.filter((g) => g.kind === "equipment");
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8">
-      <h1 className="text-2xl font-semibold">Weekly Checks</h1>
+      <h1 className="text-2xl font-semibold">Checks</h1>
 
       {submitted === "PASS" && (
         <p className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-800">
@@ -113,21 +146,25 @@ export default async function ChecksPage({
         </p>
       )}
 
-      {templates.length === 0 && (
+      {groups.length === 0 && (
         <p className="text-sm text-gray-500">No checklists have been set up yet.</p>
       )}
 
-      {apparatusTemplates.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Apparatus</h2>
-          {renderList(apparatusTemplates)}
+      {apparatus.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Apparatus</h2>
+          {apparatus.map((group) => (
+            <GroupCard key={group.key} group={group} />
+          ))}
         </section>
       )}
 
-      {equipmentTemplates.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Equipment</h2>
-          {renderList(equipmentTemplates)}
+      {equipment.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 className="text-lg font-semibold">Equipment</h2>
+          {equipment.map((group) => (
+            <GroupCard key={group.key} group={group} />
+          ))}
         </section>
       )}
     </div>
