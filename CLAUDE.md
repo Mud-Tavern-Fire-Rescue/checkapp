@@ -81,7 +81,7 @@ Done:
 - `/checks`: each vehicle's Weekly and Monthly checklists with last check, Due, and Failed badges
 - Running a check: items grouped by section, "Mark unanswered as Pass" per section, note required on failures
 - Failure alerts email all active officers and record a `FailureAlert` row; email errors never block saving
-- `/officer`: officer roster and recent failed checks
+- `/officer`: recent failed checks, all recent checks (25), officer roster; each check opens a read-only results page at `/officer/checks/[submissionId]` (failed items first, then every item by section with notes)
 - `/admin`: people, apparatus and equipment, checklists (frequency, sections, reorder within section, remove/restore)
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
 
@@ -89,7 +89,7 @@ To do:
 - Production SMTP settings (alerts are not emailed from the live site yet)
 - Publish the Google OAuth app (Testing mode: only listed test users can sign in)
 - Retry `FailureAlert` rows with status FAILED
-- Officer review: filter and browse all checks, not just recent failures
+- Officer review: filter checks by vehicle, date, and status (dashboard shows only the latest 25)
 - Admin: renaming apparatus/equipment and moving equipment between trucks
 - Separate Neon branch for local development (production and local share one database)
 - Possible: "Out of service" status when a safety-critical item fails; two-signature controlled-substance checks on QRV-1
