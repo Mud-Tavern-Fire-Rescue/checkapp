@@ -79,6 +79,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 Done:
 - Google sign-in (only people added in Admin), route protection, site header
 - `/checks`: each vehicle's Weekly and Monthly checklists with last check, Due, and Failed badges
+- `/status` (all members, linked in the header): one row per active vehicle with the result, date, and member of its most recent check (weekly or monthly); blank if never checked
 - Running a check: items grouped by section, "Mark unanswered as Pass" per section, note required on failures
 - Failure alerts email all active officers and record a `FailureAlert` row; email errors never block saving
 - `/officer`: recent failed checks (10), all recent checks (10), officer roster; each check opens a read-only results page at `/officer/checks/[submissionId]` (failed items first, then every item by section with notes)

@@ -20,6 +20,9 @@ export async function SiteHeader() {
           <Link href="/checks" className="text-gray-600 hover:text-black">
             Checks
           </Link>
+          <Link href="/status" className="text-gray-600 hover:text-black">
+            Status
+          </Link>
           {role === "OFFICER" && (
             <>
               <Link href="/officer" className="text-gray-600 hover:text-black">
