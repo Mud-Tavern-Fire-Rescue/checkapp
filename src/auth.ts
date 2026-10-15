@@ -18,6 +18,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/signin",
   },
+  // Members open the app from their phone's home screen, so keep them signed
+  // in: a session lasts 90 days and is extended each day it's used.
+  // Deactivating someone in Admin still signs them out immediately.
+  session: {
+    strategy: "database",
+    maxAge: 90 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
+  },
   callbacks: {
     // Only people an officer has added in Admin > People can sign in.
     // Unknown or deactivated emails are rejected, so the adapter never

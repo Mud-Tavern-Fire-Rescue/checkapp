@@ -80,6 +80,8 @@ Done:
 - Google sign-in (only people added in Admin), route protection, site header
 - `/checks`: each vehicle's Weekly and Monthly checklists with last check, Due, and Failed badges
 - `/status` (all members, linked in the header): one row per active vehicle with the result, date, and member of its most recent check (weekly or monthly); blank if never checked
+- Installable app: `src/app/manifest.ts` (opens at `/status`, standalone), MTVFR logo icons (`src/app/icon.png`, `src/app/apple-icon.png`, `public/icons/`), iPhone `appleWebApp` metadata; the manifest and icons are public in `src/proxy.ts` so phones can fetch them before sign-in. `InstallCard` on `/status` gives iPhone/Android steps and an Android one-tap install, hidden once installed or dismissed
+- Sessions last 90 days and renew daily (`session` in `src/auth.ts`); deactivating a user deletes their sessions
 - Running a check: items grouped by section, "Mark unanswered as Pass" per section, note required on failures
 - Failure alerts email all active officers and record a `FailureAlert` row; email errors never block saving
 - `/officer`: recent failed checks (10), all recent checks (10), officer roster; each check opens a read-only results page at `/officer/checks/[submissionId]` (failed items first, then every item by section with notes)

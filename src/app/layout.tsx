@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -16,6 +16,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Equipment Checks",
   description: "Weekly truck and equipment checks",
+  // iPhone "Add to Home Screen": open full-screen with this name.
+  appleWebApp: {
+    capable: true,
+    title: "MTVFR Checks",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2e5f7f",
 };
 
 export default function RootLayout({

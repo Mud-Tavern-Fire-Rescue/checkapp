@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { InstallCard } from "@/components/InstallCard";
 import { requireSession } from "@/lib/auth-helpers";
 import { DEPARTMENT_TIME_ZONE } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -61,6 +62,7 @@ export default async function StatusPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-8">
+      <InstallCard />
       <h1 className="text-2xl font-semibold">Vehicle Status</h1>
       <p className="text-sm text-gray-500">
         Result of each vehicle&apos;s most recent check, weekly or monthly.

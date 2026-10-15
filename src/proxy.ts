@@ -5,9 +5,15 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
+  // Phones fetch the app manifest and icons before anyone signs in, so
+  // they must be reachable without a session for "install as app" to work.
   const isPublicPath =
     nextUrl.pathname.startsWith("/signin") ||
-    nextUrl.pathname.startsWith("/api/auth");
+    nextUrl.pathname.startsWith("/api/auth") ||
+    nextUrl.pathname === "/manifest.webmanifest" ||
+    nextUrl.pathname.startsWith("/icons/") ||
+    nextUrl.pathname === "/icon.png" ||
+    nextUrl.pathname === "/apple-icon.png";
 
   if (isPublicPath) return NextResponse.next();
 
