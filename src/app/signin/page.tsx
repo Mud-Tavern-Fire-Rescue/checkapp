@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { signIn } from "@/auth";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -40,6 +41,10 @@ export default async function SignInPage({
           Sign in with Google
         </button>
       </form>
+
+      <Link href="/privacy" className="text-xs text-gray-500 hover:text-black hover:underline">
+        Privacy Policy
+      </Link>
     </div>
   );
 }

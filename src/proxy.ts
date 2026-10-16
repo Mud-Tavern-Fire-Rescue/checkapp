@@ -10,6 +10,7 @@ export default auth((req) => {
   const isPublicPath =
     nextUrl.pathname.startsWith("/signin") ||
     nextUrl.pathname.startsWith("/api/auth") ||
+    nextUrl.pathname === "/privacy" ||
     nextUrl.pathname === "/manifest.webmanifest" ||
     nextUrl.pathname.startsWith("/icons/") ||
     nextUrl.pathname === "/icon.png" ||
