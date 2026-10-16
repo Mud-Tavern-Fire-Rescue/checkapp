@@ -33,7 +33,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 
 - Google accounts only. Only people an officer has added in Admin > People (active, Google-verified email) can sign in; everyone else gets "Access denied." No one is created automatically.
 - New people are matched to their Google account by email on first sign-in.
-- While the Google OAuth app is in Testing mode, each person must also be a test user in Google Cloud.
+- The Google OAuth app is published (In production, 2026-10-15), so no Google test-user list is needed; adding someone in Admin > People is enough. It requests only basic scopes (name, email, picture), so no Google verification. Branding links: home page `https://checks.mudtavernfire.org`, privacy policy `/privacy`. Don't add an app logo in Google branding without planning for Google's brand review.
 
 ## Data model (`prisma/schema.prisma`)
 
@@ -81,6 +81,7 @@ Done:
 - `/checks`: each vehicle's Weekly and Monthly checklists with last check, Due, and Failed badges
 - `/status` (all members, linked in the header): one row per active vehicle with the result, date, and member of its most recent check (weekly or monthly); blank if never checked
 - Installable app: `src/app/manifest.ts` (opens at `/status`, standalone), MTVFR logo icons (`src/app/icon.png`, `src/app/apple-icon.png`, `public/icons/`), iPhone `appleWebApp` metadata; the manifest and icons are public in `src/proxy.ts` so phones can fetch them before sign-in. `InstallCard` on `/status` gives iPhone/Android steps and an Android one-tap install, hidden once installed or dismissed
+- `/privacy`: public privacy policy (required by Google), linked from sign-in; keep it in step with what the app stores
 - Sessions last 90 days and renew daily (`session` in `src/auth.ts`); deactivating a user deletes their sessions
 - Running a check: items grouped by section, "Mark unanswered as Pass" per section, note required on failures
 - Failure alerts email all active officers and record a `FailureAlert` row; email errors never block saving
@@ -91,7 +92,6 @@ Done:
 
 To do:
 - Production SMTP settings (alerts are not emailed from the live site yet)
-- Publish the Google OAuth app (Testing mode: only listed test users can sign in)
 - Retry `FailureAlert` rows with status FAILED
 - Admin: renaming apparatus/equipment and moving equipment between trucks
 - Separate Neon branch for local development (production and local share one database)
