@@ -91,7 +91,7 @@ Done:
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
 
 To do:
-- Production SMTP settings (alerts are not emailed from the live site yet)
+- Alert delivery (alerts are not sent from the live site yet). Department is deciding (as of 2026-10-15) between email (needs production SMTP) and GroupMe, or both. GroupMe option: a bot (dev.groupme.com) posts via `POST https://api.groupme.com/v3/bots/post` with `bot_id` + `text`; bots are tied to one group, and posting to a GroupMe Topic is unconfirmed (would need a test). Recommended fallback: a dedicated "MTVFR Equipment Alerts" group. Store the bot ID as a Vercel env var (anyone with it can post).
 - Retry `FailureAlert` rows with status FAILED
 - Admin: renaming apparatus/equipment and moving equipment between trucks
 - Separate Neon branch for local development (production and local share one database)
