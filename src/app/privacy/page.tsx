@@ -12,7 +12,7 @@ export default function PrivacyPage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-10 text-sm leading-6 text-gray-800">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Privacy Policy</h1>
-        <p className="text-gray-500">MTVFR Equipment Checks · Effective October 15, 2026</p>
+        <p className="text-gray-500">MTVFR Equipment Checks · Effective October 22, 2026</p>
       </div>
 
       <p>
@@ -60,7 +60,8 @@ export default function PrivacyPage() {
           Signed-in members can see each vehicle&apos;s latest check and who completed it.
           Department officers can see all check records and the list of members. Data is stored
           with the service providers that host the app (Vercel for hosting and Neon for the
-          database), who process it on the department&apos;s behalf. Hosting providers may keep
+          database), who process it on the department&apos;s behalf. Failed-check alert emails are sent
+          to officers through the department&apos;s Microsoft 365 email. Hosting providers may keep
           routine server logs, such as IP addresses, for security and reliability.
         </p>
       </section>

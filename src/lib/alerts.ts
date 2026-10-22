@@ -1,36 +1,6 @@
-import nodemailer from "nodemailer";
 import { formatDateTime } from "@/lib/format";
+import { mailerStatus, sendEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
-
-// Email settings come from environment variables (.env locally, Vercel in
-// production). SMTP_USER/SMTP_PASSWORD are optional for local maildev.
-const REQUIRED_SETTINGS = ["SMTP_HOST", "SMTP_PORT", "ALERT_FROM_EMAIL"] as const;
-
-export function emailSettingsStatus() {
-  const missing = REQUIRED_SETTINGS.filter((name) => !process.env[name]?.trim());
-  return {
-    configured: missing.length === 0,
-    missing,
-    host: process.env.SMTP_HOST ?? "",
-    from: process.env.ALERT_FROM_EMAIL ?? "",
-  };
-}
-
-function createTransport() {
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
-    secure: port === 465,
-    auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
-      : undefined,
-    // Don't let a slow mail server hold up saving a check.
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 10_000,
-  });
-}
 
 export async function loadFailedSubmission(submissionId: string) {
   return prisma.checkSubmission.findUnique({
@@ -101,7 +71,7 @@ export async function sendFailureAlert(submissionId: string): Promise<void> {
     data: { submissionId, recipientEmails },
   });
 
-  const settings = emailSettingsStatus();
+  const settings = mailerStatus();
   const skipReason =
     recipientEmails.length === 0
       ? "No active officers to notify"
@@ -118,12 +88,7 @@ export async function sendFailureAlert(submissionId: string): Promise<void> {
 
   try {
     const { subject, text } = buildFailureAlertEmail(submission);
-    await createTransport().sendMail({
-      from: process.env.ALERT_FROM_EMAIL,
-      to: recipientEmails,
-      subject,
-      text,
-    });
+    await sendEmail({ to: recipientEmails, subject, text });
     await prisma.failureAlert.update({
       where: { id: alert.id },
       data: { status: "SENT", attempts: 1, sentAt: new Date() },
@@ -144,14 +109,9 @@ export async function sendFailureAlert(submissionId: string): Promise<void> {
 // Sends a short test message so officers can confirm the email settings
 // work without failing a real check. Returns an error message, or null.
 export async function sendTestEmail(to: string): Promise<string | null> {
-  const settings = emailSettingsStatus();
-  if (!settings.configured) {
-    return `Email sending is not set up yet (missing ${settings.missing.join(", ")}).`;
-  }
   try {
-    await createTransport().sendMail({
-      from: process.env.ALERT_FROM_EMAIL,
-      to,
+    await sendEmail({
+      to: [to],
       subject: "Test: MTVFR Equipment Checks alerts",
       text: [
         "This is a test from MTVFR Equipment Checks.",

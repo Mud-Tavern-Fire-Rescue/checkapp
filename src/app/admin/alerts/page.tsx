@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { emailSettingsStatus } from "@/lib/alerts";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { formatDateTime } from "@/lib/format";
+import { mailerStatus } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
 import { ActionForm } from "../ActionForm";
 import { sendTestAlertEmail } from "../actions";
@@ -20,7 +20,7 @@ const ALERT_STATUS = {
 
 export default async function EmailAlertsPage() {
   await requireOfficer();
-  const settings = emailSettingsStatus();
+  const settings = mailerStatus();
 
   const [officers, recentAlerts] = await Promise.all([
     prisma.user.findMany({
@@ -43,8 +43,8 @@ export default async function EmailAlertsPage() {
         <h2 className="text-lg font-semibold">Email sending</h2>
         {settings.configured ? (
           <p className="text-sm text-green-800">
-            Set up. Alerts are sent from <strong>{settings.from}</strong> through{" "}
-            {settings.host}.
+            Set up. Alerts are sent from <strong>{settings.from}</strong> using{" "}
+            {settings.method}.
           </p>
         ) : (
           <p className="text-sm text-red-700">

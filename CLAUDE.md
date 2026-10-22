@@ -26,7 +26,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 - Next.js 16 (App Router), React 19, Tailwind 4, TypeScript. Read `node_modules/next/dist/docs/` before using Next APIs (see AGENTS.md).
 - Postgres on Neon, via Prisma **6**. Do not upgrade to Prisma 7: `@auth/prisma-adapter` doesn't support it yet.
 - Auth.js (next-auth v5 beta) with the Prisma adapter and **database sessions**, so role changes take effect immediately. The proxy (`src/proxy.ts`, formerly middleware) runs on Node.js, which this needs.
-- Email alerts via nodemailer over SMTP. Locally, `npm run mail:dev` starts maildev to catch mail (no Docker on this Mac).
+- Email alerts via `src/lib/mailer.ts`: Microsoft Graph `sendMail` in production (department email is Microsoft 365; sender `truckcheck@mudtavernfire.org`), nodemailer SMTP locally where `npm run mail:dev` starts maildev (no Docker on this Mac). Exchange Online is retiring password-based SMTP, so don't switch production to SMTP.
 - Node is installed with nvm (no Homebrew Node).
 
 ## Sign-in rules (`src/auth.ts`)
@@ -65,7 +65,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 - Live at https://checks.mudtavernfire.org (Vercel Hobby, project `checkapp`; also `checkapp-eight.vercel.app`). Every push to `main` deploys automatically.
 - The repo is **public** (Vercel Hobby can't deploy private org repos). Keep secrets and personal emails out of it.
 - DNS: CNAME `checks` in Cloudflare (DNS only, gray cloud) pointing at Vercel.
-- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, plus the SMTP settings once email is set up. Changing one requires a redeploy.
+- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, plus `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `ALERT_FROM_EMAIL` once email is set up. Changing one requires a redeploy.
 - Production and local development share the same Neon database.
 - Schema changes: run `npx prisma migrate dev` locally (applies to Neon) before merging code that needs it.
 - Linked from mudtavernfire.org under MEMBERS → EQUIPMENT CHECKS.
@@ -92,7 +92,7 @@ Done:
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
 
 To do:
-- Production email: add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_FROM_EMAIL` in Vercel (plan: a department Gmail with an app password, smtp.gmail.com:465), redeploy, then use Admin > Email Alerts > Send test email
+- Production email (Microsoft 365 admin needed): Entra app registration with Microsoft Graph **Mail.Send application** permission + admin consent, client secret, ideally restricted to the truckcheck mailbox (application access policy / RBAC for Applications). Then Vercel vars `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `ALERT_FROM_EMAIL=truckcheck@mudtavernfire.org`, redeploy, Admin > Email Alerts > Send test email. Client secrets expire (max 24 months): note the date and renew before it lapses
 - GroupMe alerts still under discussion: a bot (dev.groupme.com) posts via `POST https://api.groupme.com/v3/bots/post` with `bot_id` + `text`; bots are tied to one group, posting to a GroupMe Topic is unconfirmed. Store the bot ID as a Vercel env var (anyone with it can post).
 - Retry `FailureAlert` rows with status FAILED
 - Admin: renaming apparatus/equipment and moving equipment between trucks
