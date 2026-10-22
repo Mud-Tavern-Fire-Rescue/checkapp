@@ -54,7 +54,9 @@ try {
         }
     }
 
-    $existing = Get-ApplicationAccessPolicy | Where-Object { $_.AppId -eq $AppId }
+    # Errors when the tenant has no policies at all, which just means none exist yet.
+    $existing = Get-ApplicationAccessPolicy -ErrorAction SilentlyContinue |
+        Where-Object { $_.AppId -eq $AppId }
     if ($existing) {
         Write-Host "A restriction for this app already exists; leaving it as is."
     } else {
