@@ -26,6 +26,11 @@ export function ActionForm({
           {state.error}
         </p>
       )}
+      {state.message && (
+        <p aria-live="polite" className="basis-full text-sm text-green-700">
+          {state.message}
+        </p>
+      )}
     </form>
   );
 }

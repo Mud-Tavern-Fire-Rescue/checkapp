@@ -6,6 +6,7 @@ const SECTIONS = [
   { href: "/admin/people", label: "People" },
   { href: "/admin/equipment", label: "Apparatus & Equipment" },
   { href: "/admin/checklists", label: "Checklists" },
+  { href: "/admin/alerts", label: "Email Alerts" },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

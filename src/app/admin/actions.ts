@@ -3,10 +3,11 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { sendTestEmail } from "@/lib/alerts";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
-export type AdminActionState = { error?: string };
+export type AdminActionState = { error?: string; message?: string };
 
 const roleSchema = z.enum(["MEMBER", "OFFICER"]);
 const nameSchema = z.string().trim().min(1, "Name is required.").max(100);
@@ -348,4 +349,16 @@ export async function moveChecklistItem(
   );
   refresh();
   return {};
+}
+
+// --- Email alerts ---
+
+export async function sendTestAlertEmail(): Promise<AdminActionState> {
+  const session = await requireOfficer();
+  const email = session.user.email;
+  if (!email) return { error: "Your account has no email address." };
+  const error = await sendTestEmail(email);
+  return error
+    ? { error: `The test email could not be sent: ${error}` }
+    : { message: `Test email sent to ${email}. Check your inbox (and spam folder).` };
 }

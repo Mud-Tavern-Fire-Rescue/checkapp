@@ -65,7 +65,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 - Live at https://checks.mudtavernfire.org (Vercel Hobby, project `checkapp`; also `checkapp-eight.vercel.app`). Every push to `main` deploys automatically.
 - The repo is **public** (Vercel Hobby can't deploy private org repos). Keep secrets and personal emails out of it.
 - DNS: CNAME `checks` in Cloudflare (DNS only, gray cloud) pointing at Vercel.
-- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`. Changing one requires a redeploy.
+- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, plus the SMTP settings once email is set up. Changing one requires a redeploy.
 - Production and local development share the same Neon database.
 - Schema changes: run `npx prisma migrate dev` locally (applies to Neon) before merging code that needs it.
 - Linked from mudtavernfire.org under MEMBERS → EQUIPMENT CHECKS.
@@ -84,14 +84,16 @@ Done:
 - `/privacy`: public privacy policy (required by Google), linked from sign-in; keep it in step with what the app stores
 - Sessions last 90 days and renew daily (`session` in `src/auth.ts`); deactivating a user deletes their sessions
 - Running a check: items grouped by section, "Mark unanswered as Pass" per section, note required on failures
-- Failure alerts email all active officers and record a `FailureAlert` row; email errors never block saving
+- Failure alerts email all active officers (subject "FAILED: <checklist> (N items)", failed items with notes, link to `/officer/checks/[id]`) and record a `FailureAlert` row; skipped with a recorded reason if email isn't set up; 10 s SMTP timeouts; email errors never block saving
+- `/admin/alerts`: email setup status, alert recipients (active officers), "Send test email to me", recent alert attempts with errors
 - `/officer`: recent failed checks (10), all recent checks (10), officer roster; each check opens a read-only results page at `/officer/checks/[submissionId]` (failed items first, then every item by section with notes)
 - `/officer/checks`: check history filtered by vehicle, result, and date range (whole days in Central time via `departmentDayStart`), 50 per page; filters are URL parameters so views can be bookmarked
 - `/admin`: people, apparatus and equipment, checklists (frequency, sections, reorder within section, remove/restore)
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
 
 To do:
-- Alert delivery (alerts are not sent from the live site yet). Department is deciding (as of 2026-10-15) between email (needs production SMTP) and GroupMe, or both. GroupMe option: a bot (dev.groupme.com) posts via `POST https://api.groupme.com/v3/bots/post` with `bot_id` + `text`; bots are tied to one group, and posting to a GroupMe Topic is unconfirmed (would need a test). Recommended fallback: a dedicated "MTVFR Equipment Alerts" group. Store the bot ID as a Vercel env var (anyone with it can post).
+- Production email: add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_FROM_EMAIL` in Vercel (plan: a department Gmail with an app password, smtp.gmail.com:465), redeploy, then use Admin > Email Alerts > Send test email
+- GroupMe alerts still under discussion: a bot (dev.groupme.com) posts via `POST https://api.groupme.com/v3/bots/post` with `bot_id` + `text`; bots are tied to one group, posting to a GroupMe Topic is unconfirmed. Store the bot ID as a Vercel env var (anyone with it can post).
 - Retry `FailureAlert` rows with status FAILED
 - Admin: renaming apparatus/equipment and moving equipment between trucks
 - Separate Neon branch for local development (production and local share one database)
