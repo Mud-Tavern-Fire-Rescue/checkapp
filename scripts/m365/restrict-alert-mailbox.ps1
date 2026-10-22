@@ -2,6 +2,9 @@
 # the truckcheck mailbox. Without this, its Mail.Send permission would let it
 # send as any mailbox in the department.
 #
+# Exchange only accepts a mail-enabled security group as the policy scope (not
+# a mailbox), so this creates a hidden group whose only member is truckcheck.
+#
 # Run from a Mac terminal (it signs you in through the browser):
 #   pwsh-preview -File scripts/m365/restrict-alert-mailbox.ps1
 #
@@ -12,7 +15,8 @@
 param(
     [string]$AppId,
     [string]$AdminEmail = "Mike.Russell@mudtavernfire.org",
-    [string]$Mailbox = "truckcheck@mudtavernfire.org"
+    [string]$Mailbox = "truckcheck@mudtavernfire.org",
+    [string]$GroupEmail = "checkapp-senders@mudtavernfire.org"
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,11 +38,27 @@ Write-Host "Signing in as $AdminEmail (a browser window will open)..."
 Connect-ExchangeOnline -UserPrincipalName $AdminEmail -ShowBanner:$false
 
 try {
+    $group = Get-DistributionGroup -Identity $GroupEmail -ErrorAction SilentlyContinue
+    if (-not $group) {
+        New-DistributionGroup -Name "MTVFR Equipment Checks senders" -Alias "checkapp-senders" `
+            -PrimarySmtpAddress $GroupEmail -Type Security -Members $Mailbox | Out-Null
+        # Keep it out of the address book and closed to outside mail.
+        Set-DistributionGroup -Identity $GroupEmail -HiddenFromAddressListsEnabled $true `
+            -RequireSenderAuthenticationEnabled $true
+        Write-Host "Created hidden security group $GroupEmail containing $Mailbox."
+    } else {
+        $members = Get-DistributionGroupMember -Identity $GroupEmail | ForEach-Object { $_.PrimarySmtpAddress }
+        if ($members -notcontains $Mailbox) {
+            Add-DistributionGroupMember -Identity $GroupEmail -Member $Mailbox
+            Write-Host "Added $Mailbox to $GroupEmail."
+        }
+    }
+
     $existing = Get-ApplicationAccessPolicy | Where-Object { $_.AppId -eq $AppId }
     if ($existing) {
         Write-Host "A restriction for this app already exists; leaving it as is."
     } else {
-        New-ApplicationAccessPolicy -AppId $AppId -PolicyScopeGroupId $Mailbox `
+        New-ApplicationAccessPolicy -AppId $AppId -PolicyScopeGroupId $GroupEmail `
             -AccessRight RestrictAccess `
             -Description "MTVFR Equipment Checks sends only as $Mailbox" | Out-Null
         Write-Host "Restriction created."
@@ -52,7 +72,8 @@ try {
     if ($allowed -eq "Granted" -and $blocked -eq "Denied") {
         Write-Host "`nDone. It can take up to an hour for Microsoft to enforce the restriction."
     } else {
-        Write-Host "`nThe results aren't what we expected. Send these lines to Claude."
+        Write-Host "`nThe results aren't what we expected yet. A new group can take a few minutes"
+        Write-Host "to take effect; run this script again in 10 minutes. If it still differs, send these lines to Claude."
     }
 } finally {
     Disconnect-ExchangeOnline -Confirm:$false | Out-Null
