@@ -85,6 +85,7 @@ Done:
 - Sessions last 90 days and renew daily (`session` in `src/auth.ts`); deactivating a user deletes their sessions
 - Running a check: items grouped by section, "Mark unanswered as Pass" per section, note required on failures
 - Failure alerts email all active officers (subject "FAILED: <checklist> (N items)", failed items with notes, link to `/officer/checks/[id]`) and record a `FailureAlert` row; skipped with a recorded reason if email isn't set up; 10 s SMTP timeouts; email errors never block saving
+- Production email live 2026-10-22: Entra app "MTVFR Equipment Checks" (client ID 92ee4472-e5f0-490c-9dca-d2267eac4786) with Graph Mail.Send (application, admin-consented), sending as the shared mailbox truckcheck@mudtavernfire.org. Restricted by an application access policy scoped to the hidden mail-enabled security group checkapp-senders@mudtavernfire.org (only member: truckcheck); `scripts/m365/restrict-alert-mailbox.ps1` recreates it. **Client secret expires about 2026-10-22 + 24 months (Oct 2028): create a new secret (copy the Value, not the Secret ID), update `MS_CLIENT_SECRET` in Vercel, redeploy, and send a test email.**
 - `/admin/alerts`: email setup status, alert recipients (active officers), "Send test email to me", recent alert attempts with errors
 - `/officer`: recent failed checks (10), all recent checks (10), officer roster; each check opens a read-only results page at `/officer/checks/[submissionId]` (failed items first, then every item by section with notes)
 - `/officer/checks`: check history filtered by vehicle, result, and date range (whole days in Central time via `departmentDayStart`), 50 per page; filters are URL parameters so views can be bookmarked
@@ -92,7 +93,6 @@ Done:
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
 
 To do:
-- Production email (Microsoft 365 admin needed): Entra app registration with Microsoft Graph **Mail.Send application** permission + admin consent, client secret, ideally restricted to the truckcheck mailbox (application access policy / RBAC for Applications). Then Vercel vars `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `ALERT_FROM_EMAIL=truckcheck@mudtavernfire.org`, redeploy, Admin > Email Alerts > Send test email. Client secrets expire (max 24 months): note the date and renew before it lapses
 - GroupMe alerts still under discussion: a bot (dev.groupme.com) posts via `POST https://api.groupme.com/v3/bots/post` with `bot_id` + `text`; bots are tied to one group, posting to a GroupMe Topic is unconfirmed. Store the bot ID as a Vercel env var (anyone with it can post).
 - Retry `FailureAlert` rows with status FAILED
 - Admin: renaming apparatus/equipment and moving equipment between trucks
