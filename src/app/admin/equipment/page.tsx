@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { ActionForm } from "../ActionForm";
+import { ActionForm } from "@/components/ActionForm";
 import {
   addApparatus,
   addEquipmentItem,

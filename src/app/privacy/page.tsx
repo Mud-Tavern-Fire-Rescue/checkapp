@@ -12,7 +12,7 @@ export default function PrivacyPage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-10 text-sm leading-6 text-gray-800">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Privacy Policy</h1>
-        <p className="text-gray-500">MTVFR Equipment Checks · Effective October 22, 2026</p>
+        <p className="text-gray-500">MTVFR Equipment Checks · Effective October 30, 2026</p>
       </div>
 
       <p>
@@ -36,6 +36,11 @@ export default function PrivacyPage() {
           <li>
             <strong>Checks you submit:</strong>{" "}the vehicle or equipment, the date and time, each
             item&apos;s result (pass, fail, or not applicable), and any notes you enter.
+          </li>
+          <li>
+            <strong>Supply requests you submit or update:</strong>{" "}what was requested, quantity,
+            date needed, notes, and a history of who changed what and when. Requests are kept as a
+            permanent record and are not deleted.
           </li>
           <li>
             <strong>A sign-in cookie</strong>{" "}that keeps you signed in. We use no advertising or

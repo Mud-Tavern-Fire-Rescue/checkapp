@@ -1,16 +1,18 @@
 "use client";
 
 import { useActionState, type ReactNode } from "react";
-import type { AdminActionState } from "./actions";
 
-// Wraps an admin server action so validation errors show inline instead of
-// crashing the page.
+// Result of a form's server action: an error to show, or a success message.
+export type FormState = { error?: string; message?: string };
+
+// Wraps a server action so validation errors and success messages show
+// inline instead of crashing the page.
 export function ActionForm({
   action,
   children,
   className,
 }: {
-  action: (state: AdminActionState, formData: FormData) => Promise<AdminActionState>;
+  action: (state: FormState, formData: FormData) => Promise<FormState>;
   children: ReactNode;
   className?: string;
 }) {

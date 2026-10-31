@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { FREQUENCY_LABEL } from "@/lib/schedule";
-import { ActionForm } from "../ActionForm";
+import { ActionForm } from "@/components/ActionForm";
 import { createTemplate } from "../actions";
 import { inputClass, primaryButtonClass } from "../ui";
 
