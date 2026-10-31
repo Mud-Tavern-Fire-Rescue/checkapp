@@ -6,6 +6,7 @@
     "predev": "tsx --env-file=.env scripts/check-database.ts",
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/trim-traces.mjs",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
