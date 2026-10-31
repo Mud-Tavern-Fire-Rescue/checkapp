@@ -14,6 +14,38 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 - A failed check sends an alert to the officers.
 - Sign-in through Google (Microsoft was considered; Google was chosen).
 
+## Planned features (officer feedback, 2026-10-30)
+
+Requested by the officers; not built yet. Build order: test database (Neon branch) → supply requests → work orders → equipment loans. More officer feedback may still change these.
+
+Shared rules:
+- No one can delete a request, work order, or loan, officers included. Completed or canceled records are archived and stay viewable and searchable.
+- Keep a change history on each record (who changed what, when) so edits never erase the record.
+- New submissions email the officers through the existing mailer.
+- Notes are for equipment only: never patient or incident details (show this reminder on the forms).
+
+Supply requests (all members):
+- Fields: item, quantity, date needed, notes. Statuses: Requested, Ordered, Denied (with reason), Received, Canceled.
+- Any member can edit a request; an officer marks it Received. Everyone can see the filterable list.
+
+Work orders (missing or damaged equipment; all members):
+- Can be created from scratch or with one tap from a failed check item (carry over vehicle, item, and note). Linked to the vehicle where applicable.
+- Dated progress notes (for example "replacement ordered 10/25", "replaced 11/2") until resolved. Filterable list visible to all; new work orders email the officers.
+- Out of service: deficiencies affecting safe operation or required function take the vehicle or equipment out of service; others may stay in service while repairs are arranged. The department will set the criteria and who decides. Plan for an Out of Service flag shown on the Status page.
+
+Equipment loans (all members request; officers approve):
+- Free-text item descriptions (for example "Engine 2 chainsaw"); no equipment catalog. One request can list several items, each with a quantity (for example 3 × 8-ft tables, 24 chairs). Date out and date to be returned.
+- Required checkbox acknowledging responsibility for damage, loss, and replacement. Wording comes from a short loan policy the department is writing (it should also cover normal wear and tear); use placeholder text until then.
+- Officer approves; an officer verifies the return. If returned with an issue, create a work order from the loan.
+- Overdue reminders go to the borrower and the officers. Officers see a table of everything currently on loan.
+
+Open questions:
+- Who can set and clear Out of Service (any officer, or specific roles such as Chief or Fire Captain)?
+- Can an officer approve their own loan?
+- Who can add notes to and resolve work orders: officers only, or the reporter too? Photos now or later?
+- Overdue reminder timing (for example the day after the return date, then every 3 days).
+- Final loan policy and acknowledgment wording.
+
 ## Roles
 
 - `MEMBER`: runs checks.
