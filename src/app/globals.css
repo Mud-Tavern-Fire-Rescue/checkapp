@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+/* Always light with black text. Phones in dark mode (notably Android Chrome)
+   otherwise turned item text light grey on the white checklist cards.
+   "only light" also opts out of Chrome's forced dark mode. */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
+  color-scheme: only light;
 }
 
 @theme inline {
@@ -10,13 +14,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
