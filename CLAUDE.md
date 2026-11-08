@@ -16,7 +16,7 @@ Weekly truck and equipment check app for Mud Tavern Volunteer Fire and Rescue (M
 
 ## Planned features (officer feedback, 2026-10-30)
 
-Requested by the officers. Supply requests and work orders are built; equipment loans are not. Build order: test database (Neon branch) → supply requests → work orders → equipment loans. More officer feedback may still change these.
+Requested by the officers. Supply requests, work orders, and equipment loans are built (loans not yet merged). Build order: test database (Neon branch) → supply requests → work orders → equipment loans. More officer feedback may still change these.
 
 Shared rules:
 - No one can delete a request, work order, or loan, officers included. Completed or canceled records are archived and stay viewable and searchable.
@@ -41,9 +41,7 @@ Equipment loans (all members request; officers approve):
 
 Open questions:
 - Who can set and clear Out of Service (any officer, or specific roles such as Chief or Fire Captain)?
-- Can an officer approve their own loan?
 - Who can add notes to and resolve work orders: officers only, or the reporter too? Photos now or later?
-- Overdue reminder timing (for example the day after the return date, then every 3 days).
 - Final loan policy and acknowledgment wording.
 
 ## Roles
@@ -97,7 +95,7 @@ Open questions:
 - Live at https://checks.mudtavernfire.org (Vercel Hobby, project `checkapp`; also `checkapp-eight.vercel.app`). Every push to `main` deploys automatically.
 - The repo is **public** (Vercel Hobby can't deploy private org repos). Keep secrets and personal emails out of it.
 - DNS: CNAME `checks` in Cloudflare (DNS only, gray cloud) pointing at Vercel.
-- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, plus `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `ALERT_FROM_EMAIL` once email is set up. Changing one requires a redeploy.
+- Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, plus `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `ALERT_FROM_EMAIL` once email is set up, and `CRON_SECRET` (random string; Vercel Cron sends it to `/api/cron/*`). Changing one requires a redeploy.
 - Local development uses the Neon `dev` branch (`DATABASE_URL`); production is the `production` branch (`PROD_DATABASE_URL` locally, `DATABASE_URL` in Vercel). "Reset from parent" in Neon refreshes dev with live data.
 - Schema changes: once `DATABASE_URL` points at the Neon dev branch, run `npx prisma migrate dev` there, then `npm run db:migrate:prod` before merging code that needs it. Until then, `migrate dev` changes the live database.
 - Linked from mudtavernfire.org under MEMBERS → EQUIPMENT CHECKS.
@@ -125,6 +123,9 @@ Done:
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
 - Supply requests (branch `supply-requests`, migration `20261107120000_add_supply_requests` applied to the dev branch and tested, then applied to production, 2026-11-07; branch not yet merged): `/supplies` list with filters, `/supplies/new`, `/supplies/[id]` with member edits, officer Ordered/Received/Denied, cancel, and change history in `RecordEvent`; new requests email the officers
 - Work orders (branch `work-orders`, migration `20261108020923_add_work_orders` applied to the dev branch and production, tested 2026-11-07; branch not yet merged): `/work-orders` list (status, vehicle/equipment, search incl. notes, out of service only), `/work-orders/new` (from scratch, or `?result=<checkItemResultId>` to carry over a failed item's vehicle, item, and note), `/work-orders/[id]` with dated progress notes, edit, resolve, cancel, and history. "Create work order" links on each failed item in `/officer/checks/[id]` and on `/checks` right after a member submits a failed check. Open out-of-service work orders show an Out of Service badge on `/status`. Officers are emailed on new work orders and when one is marked out of service. Interim permissions until the officers decide: any member opens, edits, and adds notes; officers resolve (summary required) and set or clear Out of Service; the reporter or an officer cancels. Photos not yet
+- Equipment loans decisions (2026-11-07): officers can't approve their own loans; one reminder email on the due date only; every member can see the loan list
+- Equipment loans (branch `equipment-loans`, migration `20261108023457_add_equipment_loans` applied to the dev branch only, tested 2026-11-07): `/loans` with a "Currently on loan" table (overdue first, highlighted) and a filterable list; `/loans/new` with free-text item rows and quantities, date out, return by, notes, and a required responsibility checkbox (placeholder wording `LOAN_ACKNOWLEDGEMENT` in `src/lib/loans.ts`; each loan stores the wording agreed to); `/loans/[id]` with approve/deny (officers; not their own loan), verify return (with an issue requires a note), "Create work order" from a loan returned with an issue (`/work-orders/new?loan=<id>`), edit (borrower until approved, officers after), cancel before it goes out, and history. Emails: new requests to officers, approve/deny to the borrower, one reminder to the borrower on the due date and none after (decided 2026-11-07; overdue loans show in red in the app) via Vercel Cron (`vercel.json`, daily 14:00 UTC) calling `/api/cron/loan-reminders`, which requires `CRON_SECRET`
+- Forms (`ActionForm`) keep what was typed when the server returns an error, and clear after success
 - `npm run dev` warns when `DATABASE_URL` equals `PROD_DATABASE_URL`; `npm run db:migrate:prod` applies committed migrations to the live database (`migrate deploy`)
 
 To do:

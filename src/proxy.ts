@@ -10,6 +10,8 @@ export default auth((req) => {
   const isPublicPath =
     nextUrl.pathname.startsWith("/signin") ||
     nextUrl.pathname.startsWith("/api/auth") ||
+    // Cron routes check their own secret (Vercel Cron has no session).
+    nextUrl.pathname.startsWith("/api/cron/") ||
     nextUrl.pathname === "/privacy" ||
     nextUrl.pathname === "/manifest.webmanifest" ||
     nextUrl.pathname.startsWith("/icons/") ||

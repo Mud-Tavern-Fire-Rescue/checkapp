@@ -29,6 +29,9 @@ export async function SiteHeader() {
           <Link href="/supplies" className="text-gray-600 hover:text-black">
             Supplies
           </Link>
+          <Link href="/loans" className="text-gray-600 hover:text-black">
+            Loans
+          </Link>
           {role === "OFFICER" && (
             <>
               <Link href="/officer" className="text-gray-600 hover:text-black">

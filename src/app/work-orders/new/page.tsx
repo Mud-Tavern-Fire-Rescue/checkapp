@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/ActionForm";
 import { requireSession } from "@/lib/auth-helpers";
 import { formatDateTime } from "@/lib/format";
+import { itemsSummary } from "@/lib/loans";
 import { prisma } from "@/lib/prisma";
 import { subjectOptions, subjectValue } from "@/lib/work-orders";
 import { createWorkOrder } from "../actions";
@@ -13,14 +14,26 @@ export const metadata: Metadata = {
 };
 
 // ?result=<checkItemResultId> starts from a failed check item, carrying over
-// the vehicle, item, and note.
+// the vehicle, item, and note. ?loan=<loanId> starts from an equipment loan
+// that was returned with an issue.
 export default async function NewWorkOrderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ result?: string }>;
+  searchParams: Promise<{ result?: string; loan?: string }>;
 }) {
   const session = await requireSession();
-  const { result: resultId } = await searchParams;
+  const { result: resultId, loan: loanId } = await searchParams;
+
+  const loan =
+    !resultId && loanId
+      ? await prisma.equipmentLoan.findFirst({
+          where: { id: loanId, status: "RETURNED" },
+          include: {
+            borrower: { select: { name: true } },
+            items: { orderBy: { sortOrder: "asc" } },
+          },
+        })
+      : null;
 
   const result = resultId
     ? await prisma.checkItemResult.findFirst({
@@ -50,7 +63,13 @@ export default async function NewWorkOrderPage({
         description: result.note,
         subject: subjectValue(result.submission),
       }
-    : undefined;
+    : loan
+      ? {
+          title: `Loan return issue: ${itemsSummary(loan.items)}`.slice(0, 200),
+          description: loan.returnNote,
+          subject: "",
+        }
+      : undefined;
   const options = await subjectOptions(result?.submission);
   const existing = result?.workOrders[0];
 
@@ -73,6 +92,12 @@ export default async function NewWorkOrderPage({
           {formatDateTime(result.submission.submittedAt)} by {result.submission.submittedBy.name}.
         </p>
       )}
+      {loan && (
+        <p className="rounded-md bg-gray-50 px-4 py-3 text-sm text-gray-700">
+          From the equipment loan to {loan.borrower.name}, returned{" "}
+          {loan.returnedAt && formatDateTime(loan.returnedAt)}.
+        </p>
+      )}
       {existing && (
         <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
           This item already has an open work order.{" "}
@@ -86,6 +111,7 @@ export default async function NewWorkOrderPage({
       <ActionForm action={createWorkOrder} className="grid gap-4 sm:grid-cols-2">
         <WorkOrderFields options={options} defaults={defaults} />
         {result && <input type="hidden" name="checkItemResultId" value={result.id} />}
+        {loan && <input type="hidden" name="loanId" value={loan.id} />}
         {session.user.role === "OFFICER" && (
           <label className="flex items-start gap-2 text-sm sm:col-span-2">
             <input type="checkbox" name="outOfService" className="mt-1" />

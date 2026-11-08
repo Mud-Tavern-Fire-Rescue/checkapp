@@ -48,6 +48,12 @@ export default function PrivacyPage() {
             orders are kept as a permanent record and are not deleted.
           </li>
           <li>
+            <strong>Equipment loans you request:</strong>{" "}the items and quantities, dates out and
+            due back, notes, the responsibility statement you agreed to and when, approval and return
+            details, and a history of changes. Loans are kept as a permanent record and are not
+            deleted. You get one email reminder on the day a loan is due back.
+          </li>
+          <li>
             <strong>A sign-in cookie</strong>{" "}that keeps you signed in. We use no advertising or
             analytics cookies and no tracking tools.
           </li>
