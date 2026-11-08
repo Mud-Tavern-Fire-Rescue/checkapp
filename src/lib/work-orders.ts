@@ -2,6 +2,7 @@ import type { WorkOrderStatus } from "@prisma/client";
 import { formatDateTime } from "@/lib/format";
 import { sendEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
+import { activeOfficerEmails } from "@/lib/recipients";
 
 export const WORK_ORDER_STATUS: Record<WorkOrderStatus, { label: string; className: string }> = {
   OPEN: { label: "Open", className: "bg-amber-100 text-amber-800" },
@@ -79,10 +80,7 @@ export async function notifyOfficersOfWorkOrder(
           equipmentItem: { select: { name: true } },
         },
       }),
-      prisma.user.findMany({
-        where: { role: "OFFICER", isActive: true },
-        select: { email: true },
-      }),
+      activeOfficerEmails(),
     ]);
     if (!workOrder || officers.length === 0) return;
 
@@ -90,7 +88,7 @@ export async function notifyOfficersOfWorkOrder(
     const prefix = reason === "outOfService" || workOrder.outOfService ? "OUT OF SERVICE: " : "";
     const appUrl = (process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "");
     await sendEmail({
-      to: officers.map((o) => o.email),
+      to: officers,
       subject: `${prefix}Work order: ${subject ? `${subject} – ` : ""}${workOrder.title}`,
       text: [
         reason === "created"

@@ -1,6 +1,7 @@
 import type { LoanStatus } from "@prisma/client";
 import { sendEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
+import { activeOfficerEmails, deliveryEmail, deliveryEmailSelect } from "@/lib/recipients";
 import { departmentToday, formatDateOnly } from "@/lib/supplies";
 
 export const LOAN_STATUS: Record<LoanStatus, { label: string; className: string }> = {
@@ -41,19 +42,11 @@ function appLink(path: string) {
   return appUrl ? [``, `View it: ${appUrl}${path}`] : [];
 }
 
-async function activeOfficerEmails() {
-  const officers = await prisma.user.findMany({
-    where: { role: "OFFICER", isActive: true },
-    select: { email: true },
-  });
-  return officers.map((o) => o.email);
-}
-
 async function loadLoan(loanId: string) {
   return prisma.equipmentLoan.findUnique({
     where: { id: loanId },
     include: {
-      borrower: { select: { name: true, email: true } },
+      borrower: { select: { name: true, ...deliveryEmailSelect } },
       items: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -99,7 +92,7 @@ export async function notifyBorrowerOfDecision(loanId: string) {
     if (!loan || (loan.status !== "APPROVED" && loan.status !== "DENIED")) return;
     const approved = loan.status === "APPROVED";
     await sendEmail({
-      to: [loan.borrower.email],
+      to: [deliveryEmail(loan.borrower)],
       subject: `Equipment loan ${approved ? "approved" : "denied"}`,
       text: [
         approved
@@ -134,7 +127,7 @@ export async function sendDueTodayReminders(now = new Date()) {
     if (!loan) continue;
     try {
       await sendEmail({
-        to: [loan.borrower.email],
+        to: [deliveryEmail(loan.borrower)],
         subject: "Reminder: borrowed equipment is due back today",
         text: [
           `The equipment you borrowed is due back today, ${formatDateOnly(loan.dateDue)}.`,

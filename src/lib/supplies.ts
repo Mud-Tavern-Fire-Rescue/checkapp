@@ -2,6 +2,7 @@ import type { RecordType, SupplyStatus } from "@prisma/client";
 import { DEPARTMENT_TIME_ZONE, formatDateTime } from "@/lib/format";
 import { sendEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
+import { activeOfficerEmails } from "@/lib/recipients";
 
 export const SUPPLY_STATUS: Record<SupplyStatus, { label: string; className: string }> = {
   REQUESTED: { label: "Requested", className: "bg-amber-100 text-amber-800" },
@@ -61,16 +62,13 @@ export async function notifyOfficersOfSupplyRequest(requestId: string) {
         where: { id: requestId },
         include: { requestedBy: { select: { name: true } } },
       }),
-      prisma.user.findMany({
-        where: { role: "OFFICER", isActive: true },
-        select: { email: true },
-      }),
+      activeOfficerEmails(),
     ]);
     if (!request || officers.length === 0) return;
 
     const appUrl = (process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "");
     await sendEmail({
-      to: officers.map((o) => o.email),
+      to: officers,
       subject: `Supply request: ${request.item} (${request.quantity})`,
       text: [
         `${request.requestedBy.name} requested supplies.`,

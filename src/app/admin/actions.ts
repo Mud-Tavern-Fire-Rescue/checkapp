@@ -6,6 +6,8 @@ import { z } from "zod";
 import { sendTestEmail } from "@/lib/alerts";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { normalizeNotificationEmail, notificationEmailSchema } from "@/lib/notification-email";
+import { deliveryEmail, deliveryEmailSelect } from "@/lib/recipients";
 
 import type { FormState } from "@/components/ActionForm";
 
@@ -90,6 +92,25 @@ export async function setUserActive(
   ]);
   refresh();
   return {};
+}
+
+// Officers can set where anyone's app emails go (for example a department
+// address instead of the personal Google account they sign in with).
+export async function setUserNotificationEmail(
+  userId: string,
+  _state: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  await requireOfficer();
+  const parsed = notificationEmailSchema.safeParse(formData.get("notificationEmail") ?? "");
+  if (!parsed.success) return { error: firstError(parsed.error) };
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!user) return { error: "That person no longer exists." };
+  const notificationEmail = normalizeNotificationEmail(parsed.data, user.email);
+  await prisma.user.update({ where: { id: userId }, data: { notificationEmail } });
+  refresh();
+  return { message: "Saved." };
 }
 
 // --- Apparatus and equipment ---
@@ -357,8 +378,12 @@ export async function moveChecklistItem(
 
 export async function sendTestAlertEmail(): Promise<AdminActionState> {
   const session = await requireOfficer();
-  const email = session.user.email;
-  if (!email) return { error: "Your account has no email address." };
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: deliveryEmailSelect,
+  });
+  if (!user) return { error: "Your account has no email address." };
+  const email = deliveryEmail(user);
   const error = await sendTestEmail(email);
   return error
     ? { error: `The test email could not be sent: ${error}` }
