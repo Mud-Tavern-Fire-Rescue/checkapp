@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { ActionForm } from "@/components/ActionForm";
-import { addUser, setUserActive, setUserRole } from "../actions";
+import { addUser, setUserActive, setUserNotificationEmail, setUserRole } from "../actions";
 import { inputClass, primaryButtonClass, smallButtonClass } from "../ui";
 
 export const metadata: Metadata = {
@@ -18,6 +18,7 @@ export default async function PeoplePage() {
       id: true,
       name: true,
       email: true,
+      notificationEmail: true,
       role: true,
       isActive: true,
       _count: { select: { accounts: true } },
@@ -71,6 +72,31 @@ export default async function PeoplePage() {
                     {user.email}
                     {user._count.accounts === 0 && " · hasn't signed in yet"}
                   </p>
+                  {user.notificationEmail && (
+                    <p className="text-sm text-gray-500">Emails go to {user.notificationEmail}</p>
+                  )}
+                  <details className="mt-1 text-sm">
+                    <summary className="cursor-pointer text-gray-500 hover:text-black">
+                      {user.notificationEmail ? "Change notification email" : "Set notification email"}
+                    </summary>
+                    <ActionForm
+                      action={setUserNotificationEmail.bind(null, user.id)}
+                      className="mt-2 flex flex-wrap items-center gap-2"
+                    >
+                      <input
+                        type="email"
+                        name="notificationEmail"
+                        maxLength={254}
+                        defaultValue={user.notificationEmail ?? ""}
+                        placeholder={`Blank = ${user.email}`}
+                        aria-label={`Notification email for ${user.name}`}
+                        className={`${inputClass} min-w-64`}
+                      />
+                      <button type="submit" className={smallButtonClass}>
+                        Save
+                      </button>
+                    </ActionForm>
+                  </details>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span

@@ -1,6 +1,7 @@
 import { formatDateTime } from "@/lib/format";
 import { mailerStatus, sendEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
+import { activeOfficerEmails } from "@/lib/recipients";
 
 export async function loadFailedSubmission(submissionId: string) {
   return prisma.checkSubmission.findUnique({
@@ -59,14 +60,11 @@ export function buildFailureAlertEmail(
 export async function sendFailureAlert(submissionId: string): Promise<void> {
   const [submission, officers] = await Promise.all([
     loadFailedSubmission(submissionId),
-    prisma.user.findMany({
-      where: { role: "OFFICER", isActive: true },
-      select: { email: true },
-    }),
+    activeOfficerEmails(),
   ]);
   if (!submission) return;
 
-  const recipientEmails = officers.map((o) => o.email);
+  const recipientEmails = officers;
   const alert = await prisma.failureAlert.create({
     data: { submissionId, recipientEmails },
   });

@@ -26,7 +26,7 @@ export default async function EmailAlertsPage() {
     prisma.user.findMany({
       where: { role: "OFFICER", isActive: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, notificationEmail: true },
     }),
     prisma.failureAlert.findMany({
       orderBy: { createdAt: "desc" },
@@ -75,7 +75,8 @@ export default async function EmailAlertsPage() {
         <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white text-sm">
           {officers.map((officer) => (
             <li key={officer.id} className="px-4 py-2">
-              {officer.name} <span className="text-gray-500">· {officer.email}</span>
+              {officer.name}{" "}
+              <span className="text-gray-500">· {officer.notificationEmail ?? officer.email}</span>
             </li>
           ))}
           {officers.length === 0 && (

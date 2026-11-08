@@ -34,6 +34,10 @@ export default function PrivacyPage() {
             department officers.
           </li>
           <li>
+            <strong>A notification email address,</strong>{" "}if you or an officer set one, so app
+            emails go there instead of your Google sign-in address.
+          </li>
+          <li>
             <strong>Checks you submit:</strong>{" "}the vehicle or equipment, the date and time, each
             item&apos;s result (pass, fail, or not applicable), and any notes you enter.
           </li>

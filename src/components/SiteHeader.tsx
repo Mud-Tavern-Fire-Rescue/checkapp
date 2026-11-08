@@ -45,7 +45,9 @@ export async function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-500">{name ?? email}</span>
+          <Link href="/account" className="text-gray-500 hover:text-black hover:underline">
+            {name ?? email}
+          </Link>
           <form
             action={async () => {
               "use server";

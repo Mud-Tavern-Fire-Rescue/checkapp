@@ -75,16 +75,19 @@ model VerificationToken {
 // --- Application models ---
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String
-  image         String?
-  googleId      String?   @unique
-  role          Role      @default(MEMBER)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  name              String
+  image             String?
+  googleId          String?   @unique
+  // Where app emails (alerts, requests, reminders) go, if different from the
+  // Google sign-in email. Set by the person or by an officer.
+  notificationEmail String?
+  role              Role      @default(MEMBER)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   accounts    Account[]
   sessions    Session[]
