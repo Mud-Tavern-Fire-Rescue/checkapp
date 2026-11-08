@@ -98,8 +98,8 @@ Open questions:
 - The repo is **public** (Vercel Hobby can't deploy private org repos). Keep secrets and personal emails out of it.
 - DNS: CNAME `checks` in Cloudflare (DNS only, gray cloud) pointing at Vercel.
 - Vercel environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, plus `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `ALERT_FROM_EMAIL` once email is set up. Changing one requires a redeploy.
-- Production and local development share the same Neon database.
-- Schema changes: run `npx prisma migrate dev` locally (applies to Neon) before merging code that needs it.
+- Local development uses the Neon `dev` branch (`DATABASE_URL`); production is the `production` branch (`PROD_DATABASE_URL` locally, `DATABASE_URL` in Vercel). "Reset from parent" in Neon refreshes dev with live data.
+- Schema changes: once `DATABASE_URL` points at the Neon dev branch, run `npx prisma migrate dev` there, then `npm run db:migrate:prod` before merging code that needs it. Until then, `migrate dev` changes the live database.
 - Linked from mudtavernfire.org under MEMBERS → EQUIPMENT CHECKS.
 
 ## Secrets
@@ -123,12 +123,13 @@ Done:
 - `/officer/checks`: check history filtered by vehicle, result, and date range (whole days in Central time via `departmentDayStart`), 50 per page; filters are URL parameters so views can be bookmarked
 - `/admin`: people, apparatus and equipment, checklists (frequency, sections, reorder within section, remove/restore)
 - Real checklists for all 7 vehicles imported 2026-10-09 (843 items); old sample data and test checks removed
+- Supply requests (branch `supply-requests`, migration `20261107120000_add_supply_requests` applied to the dev branch and tested, then applied to production, 2026-11-07; branch not yet merged): `/supplies` list with filters, `/supplies/new`, `/supplies/[id]` with member edits, officer Ordered/Received/Denied, cancel, and change history in `RecordEvent`; new requests email the officers
+- `npm run dev` warns when `DATABASE_URL` equals `PROD_DATABASE_URL`; `npm run db:migrate:prod` applies committed migrations to the live database (`migrate deploy`)
 
 To do:
 - GroupMe alerts still under discussion: a bot (dev.groupme.com) posts via `POST https://api.groupme.com/v3/bots/post` with `bot_id` + `text`; bots are tied to one group, posting to a GroupMe Topic is unconfirmed. Store the bot ID as a Vercel env var (anyone with it can post).
 - Retry `FailureAlert` rows with status FAILED
 - Admin: renaming apparatus/equipment and moving equipment between trucks
-- Separate Neon branch for local development (production and local share one database)
 - Possible: "Out of service" status when a safety-critical item fails; two-signature controlled-substance checks on QRV-1
 
 ## Working rules

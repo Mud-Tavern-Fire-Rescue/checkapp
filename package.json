@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsx --env-file=.env scripts/check-database.ts",
     "dev": "next dev",
     "build": "next build",
     "postbuild": "node scripts/trim-traces.mjs",
@@ -11,6 +12,7 @@
     "postinstall": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "checklists:import": "tsx --env-file=.env scripts/import-checklists.ts",
+    "db:migrate:prod": "tsx --env-file=.env scripts/migrate-production.ts",
     "mail:dev": "maildev"
   },
   "prisma": {

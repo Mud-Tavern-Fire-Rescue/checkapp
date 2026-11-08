@@ -4,7 +4,7 @@ import { requireOfficer } from "@/lib/auth-helpers";
 import { formatDateTime } from "@/lib/format";
 import { mailerStatus } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
-import { ActionForm } from "../ActionForm";
+import { ActionForm } from "@/components/ActionForm";
 import { sendTestAlertEmail } from "../actions";
 import { primaryButtonClass } from "../ui";
 

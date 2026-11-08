@@ -13,7 +13,7 @@ export async function SiteHeader() {
   return (
     <header className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <Link href="/" className="text-base font-semibold">
             Equipment Checks
           </Link>
@@ -22,6 +22,9 @@ export async function SiteHeader() {
           </Link>
           <Link href="/status" className="text-gray-600 hover:text-black">
             Status
+          </Link>
+          <Link href="/supplies" className="text-gray-600 hover:text-black">
+            Supplies
           </Link>
           {role === "OFFICER" && (
             <>

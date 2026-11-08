@@ -7,7 +7,9 @@ import { sendTestEmail } from "@/lib/alerts";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
-export type AdminActionState = { error?: string; message?: string };
+import type { FormState } from "@/components/ActionForm";
+
+export type AdminActionState = FormState;
 
 const roleSchema = z.enum(["MEMBER", "OFFICER"]);
 const nameSchema = z.string().trim().min(1, "Name is required.").max(100);

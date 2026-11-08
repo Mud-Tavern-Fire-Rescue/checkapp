@@ -90,6 +90,10 @@ model User {
   sessions    Session[]
   submissions CheckSubmission[] @relation("SubmittedBy")
 
+  supplyRequests   SupplyRequest[] @relation("SupplyRequestedBy")
+  suppliesReceived SupplyRequest[] @relation("SupplyReceivedBy")
+  recordEvents     RecordEvent[]
+
   @@index([role])
 }
 
@@ -213,4 +217,59 @@ model FailureAlert {
 
   @@index([submissionId])
   @@index([status])
+}
+
+// --- Supply requests ---
+
+// Open: REQUESTED, ORDERED. Closed (archived, still viewable): RECEIVED,
+// DENIED, CANCELED. Requests are never deleted.
+enum SupplyStatus {
+  REQUESTED
+  ORDERED
+  RECEIVED
+  DENIED
+  CANCELED
+}
+
+model SupplyRequest {
+  id            String       @id @default(cuid())
+  item          String
+  quantity      String // free text so units fit: "2 cases", "24"
+  dateNeeded    DateTime?    @db.Date
+  notes         String?
+  status        SupplyStatus @default(REQUESTED)
+  // Why it was denied or canceled.
+  statusReason  String?
+  requestedById String
+  requestedBy   User         @relation("SupplyRequestedBy", fields: [requestedById], references: [id])
+  receivedAt    DateTime?
+  receivedById  String?
+  receivedBy    User?        @relation("SupplyReceivedBy", fields: [receivedById], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status])
+  @@index([requestedById])
+  @@index([dateNeeded])
+}
+
+// --- Change history ---
+
+// One row per change to a request, work order, or loan: who, when, and a
+// readable summary ("Status: Requested → Ordered"). Shared by all record
+// types, so entityId has no foreign key.
+enum RecordType {
+  SUPPLY_REQUEST
+}
+
+model RecordEvent {
+  id         String     @id @default(cuid())
+  entityType RecordType
+  entityId   String
+  actorId    String
+  actor      User       @relation(fields: [actorId], references: [id])
+  summary    String
+  createdAt  DateTime   @default(now())
+
+  @@index([entityType, entityId, createdAt])
 }

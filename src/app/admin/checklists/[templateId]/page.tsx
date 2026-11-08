@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { groupBySection } from "@/lib/schedule";
-import { ActionForm } from "../../ActionForm";
+import { ActionForm } from "@/components/ActionForm";
 import {
   addChecklistItem,
   moveChecklistItem,
