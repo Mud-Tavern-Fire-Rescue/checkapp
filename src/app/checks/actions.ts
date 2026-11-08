@@ -96,5 +96,9 @@ export async function submitCheck(
     await sendFailureAlert(submission.id);
   }
 
-  redirect(`/checks?submitted=${overallStatus}`);
+  redirect(
+    overallStatus === "FAIL"
+      ? `/checks?submitted=FAIL&submission=${submission.id}`
+      : "/checks?submitted=PASS",
+  );
 }

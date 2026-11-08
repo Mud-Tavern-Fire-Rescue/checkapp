@@ -94,6 +94,10 @@ model User {
   suppliesReceived SupplyRequest[] @relation("SupplyReceivedBy")
   recordEvents     RecordEvent[]
 
+  workOrdersReported WorkOrder[]     @relation("WorkOrderReportedBy")
+  workOrdersResolved WorkOrder[]     @relation("WorkOrderResolvedBy")
+  workOrderNotes     WorkOrderNote[]
+
   @@index([role])
 }
 
@@ -108,6 +112,7 @@ model Apparatus {
   equipmentItems     EquipmentItem[]
   checklistTemplates ChecklistTemplate[]
   submissions        CheckSubmission[]
+  workOrders         WorkOrder[]
 }
 
 model EquipmentItem {
@@ -121,6 +126,7 @@ model EquipmentItem {
 
   checklistTemplates ChecklistTemplate[]
   submissions        CheckSubmission[]
+  workOrders         WorkOrder[]
 
   @@index([apparatusId])
 }
@@ -199,6 +205,8 @@ model CheckItemResult {
   status          ItemResultStatus
   note            String?
 
+  workOrders WorkOrder[]
+
   @@index([submissionId])
   @@index([checklistItemId])
 }
@@ -260,6 +268,7 @@ model SupplyRequest {
 // types, so entityId has no foreign key.
 enum RecordType {
   SUPPLY_REQUEST
+  WORK_ORDER
 }
 
 model RecordEvent {
@@ -272,4 +281,65 @@ model RecordEvent {
   createdAt  DateTime   @default(now())
 
   @@index([entityType, entityId, createdAt])
+}
+
+// --- Work orders ---
+
+// Missing or damaged equipment. OPEN until an officer resolves it; RESOLVED
+// and CANCELED are archived but viewable. Work orders are never deleted.
+enum WorkOrderStatus {
+  OPEN
+  RESOLVED
+  CANCELED
+}
+
+model WorkOrder {
+  id           String          @id @default(cuid())
+  title        String
+  description  String?
+  status       WorkOrderStatus @default(OPEN)
+  // Takes the vehicle or equipment out of service while the work order is
+  // open. Officers set and clear it.
+  outOfService Boolean         @default(false)
+  // Resolution summary, or why it was canceled.
+  statusReason String?
+
+  // Links are cleared rather than blocking deletes (the checklist import's
+  // --reset removes vehicles and check history); the work order is kept.
+  apparatusId       String?
+  apparatus         Apparatus?       @relation(fields: [apparatusId], references: [id], onDelete: SetNull)
+  equipmentItemId   String?
+  equipmentItem     EquipmentItem?   @relation(fields: [equipmentItemId], references: [id], onDelete: SetNull)
+  // The failed check item it was created from, if any.
+  checkItemResultId String?
+  checkItemResult   CheckItemResult? @relation(fields: [checkItemResultId], references: [id], onDelete: SetNull)
+
+  reportedById String
+  reportedBy   User      @relation("WorkOrderReportedBy", fields: [reportedById], references: [id])
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?     @relation("WorkOrderResolvedBy", fields: [resolvedById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  notes WorkOrderNote[]
+
+  @@index([status])
+  @@index([apparatusId])
+  @@index([equipmentItemId])
+  @@index([checkItemResultId])
+}
+
+// Dated progress notes ("replacement ordered", "replaced"). Kept permanently;
+// they can't be edited or removed.
+model WorkOrderNote {
+  id          String    @id @default(cuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  body        String
+  createdAt   DateTime  @default(now())
+
+  @@index([workOrderId, createdAt])
 }

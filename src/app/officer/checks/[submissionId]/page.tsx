@@ -42,6 +42,11 @@ export default async function CheckResultsPage({
       itemResults: {
         include: {
           checklistItem: { select: { label: true, section: true, sortOrder: true } },
+          workOrders: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { id: true, status: true },
+          },
         },
       },
     },
@@ -58,6 +63,7 @@ export default async function CheckResultsPage({
       label: r.checklistItem.label,
       section: r.checklistItem.section,
       sortOrder: r.checklistItem.sortOrder,
+      workOrder: r.workOrders[0],
     }))
     .sort((a, b) => a.sortOrder - b.sortOrder);
   const failed = results.filter((r) => r.status === "FAIL");
@@ -118,6 +124,15 @@ export default async function CheckResultsPage({
                   {r.label}
                 </p>
                 {r.note && <p className="text-gray-700">{r.note}</p>}
+                {r.workOrder ? (
+                  <Link href={`/work-orders/${r.workOrder.id}`} className="text-sm underline">
+                    {r.workOrder.status === "OPEN" ? "Work order open" : "View work order"}
+                  </Link>
+                ) : (
+                  <Link href={`/work-orders/new?result=${r.id}`} className="text-sm font-medium underline">
+                    Create work order
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
