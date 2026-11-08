@@ -98,6 +98,10 @@ model User {
   workOrdersResolved WorkOrder[]     @relation("WorkOrderResolvedBy")
   workOrderNotes     WorkOrderNote[]
 
+  loansBorrowed EquipmentLoan[] @relation("LoanBorrower")
+  loansApproved EquipmentLoan[] @relation("LoanApprovedBy")
+  loansReturned EquipmentLoan[] @relation("LoanReturnedBy")
+
   @@index([role])
 }
 
@@ -269,6 +273,7 @@ model SupplyRequest {
 enum RecordType {
   SUPPLY_REQUEST
   WORK_ORDER
+  EQUIPMENT_LOAN
 }
 
 model RecordEvent {
@@ -313,6 +318,9 @@ model WorkOrder {
   // The failed check item it was created from, if any.
   checkItemResultId String?
   checkItemResult   CheckItemResult? @relation(fields: [checkItemResultId], references: [id], onDelete: SetNull)
+  // The equipment loan it was created from (returned with an issue), if any.
+  loanId            String?
+  loan              EquipmentLoan?   @relation(fields: [loanId], references: [id])
 
   reportedById String
   reportedBy   User      @relation("WorkOrderReportedBy", fields: [reportedById], references: [id])
@@ -328,6 +336,7 @@ model WorkOrder {
   @@index([apparatusId])
   @@index([equipmentItemId])
   @@index([checkItemResultId])
+  @@index([loanId])
 }
 
 // Dated progress notes ("replacement ordered", "replaced"). Kept permanently;
@@ -342,4 +351,68 @@ model WorkOrderNote {
   createdAt   DateTime  @default(now())
 
   @@index([workOrderId, createdAt])
+}
+
+// --- Equipment loans ---
+
+// REQUESTED until an officer approves or denies it; APPROVED while it's out
+// (or waiting to go out); RETURNED once an officer verifies the return.
+// DENIED and CANCELED are archived too. Loans are never deleted.
+enum LoanStatus {
+  REQUESTED
+  APPROVED
+  RETURNED
+  DENIED
+  CANCELED
+}
+
+model EquipmentLoan {
+  id         String     @id @default(cuid())
+  borrowerId String
+  borrower   User       @relation("LoanBorrower", fields: [borrowerId], references: [id])
+  status     LoanStatus @default(REQUESTED)
+  dateOut    DateTime   @db.Date
+  dateDue    DateTime   @db.Date
+  notes      String?
+
+  // The responsibility wording the borrower agreed to, as it read then.
+  acknowledgement String
+  acknowledgedAt  DateTime @default(now())
+
+  // Why it was denied or canceled.
+  statusReason String?
+  approvedAt   DateTime?
+  approvedById String?
+  approvedBy   User?     @relation("LoanApprovedBy", fields: [approvedById], references: [id])
+
+  returnedAt        DateTime?
+  returnedById      String?
+  returnedBy        User?     @relation("LoanReturnedBy", fields: [returnedById], references: [id])
+  returnedWithIssue Boolean   @default(false)
+  returnNote        String?
+
+  // When the due-today reminder was sent (one per loan; cleared if the return date changes).
+  lastReminderAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items      LoanItem[]
+  workOrders WorkOrder[]
+
+  @@index([status, dateDue])
+  @@index([borrowerId])
+}
+
+// One line on a loan: free-text description (no equipment catalog) and how
+// many, e.g. "8-ft folding tables" × 3.
+model LoanItem {
+  id          String        @id @default(cuid())
+  loanId      String
+  loan        EquipmentLoan @relation(fields: [loanId], references: [id])
+  description String
+  quantity    Int
+  sortOrder   Int           @default(0)
+
+  @@index([loanId])
 }

@@ -56,6 +56,7 @@ export default async function WorkOrderPage({
             },
           },
         },
+        loan: { select: { id: true, borrower: { select: { name: true } } } },
         notes: {
           orderBy: { createdAt: "asc" },
           include: { author: { select: { name: true } } },
@@ -123,6 +124,16 @@ export default async function WorkOrderPage({
               ) : (
                 `${fromCheck.template.name}, ${formatDateTime(fromCheck.submittedAt)}`
               )}
+            </dd>
+          </>
+        )}
+        {workOrder.loan && (
+          <>
+            <dt className="text-gray-500">From loan</dt>
+            <dd>
+              <Link href={`/loans/${workOrder.loan.id}`} className="underline">
+                Equipment loan to {workOrder.loan.borrower.name}
+              </Link>
             </dd>
           </>
         )}

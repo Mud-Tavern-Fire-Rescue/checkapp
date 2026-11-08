@@ -62,6 +62,13 @@ export async function createWorkOrder(_state: FormState, formData: FormData): Pr
     const result = await prisma.checkItemResult.findUnique({ where: { id: resultId } });
     if (result?.status === "FAIL") checkItemResultId = result.id;
   }
+  // Created from an equipment loan that came back with an issue.
+  let loanId: string | null = null;
+  const loanValue = formData.get("loanId");
+  if (typeof loanValue === "string" && loanValue) {
+    const loan = await prisma.equipmentLoan.findUnique({ where: { id: loanValue } });
+    if (loan?.status === "RETURNED") loanId = loan.id;
+  }
 
   // Only officers can take something out of service.
   const outOfService = session.user.role === "OFFICER" && formData.get("outOfService") === "on";
@@ -72,6 +79,7 @@ export async function createWorkOrder(_state: FormState, formData: FormData): Pr
       description: parsed.data.description,
       ...subject,
       checkItemResultId,
+      loanId,
       outOfService,
       reportedById: session.user.id,
     },
