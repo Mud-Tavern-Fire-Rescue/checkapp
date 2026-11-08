@@ -101,7 +101,9 @@ export async function setSupplyStatus(
   formData: FormData,
 ): Promise<FormState> {
   const session = await requireOfficer();
-  const reason = reasonSchema.parse(formData.get("reason") ?? "");
+  const parsedReason = reasonSchema.safeParse(formData.get("reason") ?? "");
+  if (!parsedReason.success) return { error: "Keep the reason under 500 characters." };
+  const reason = parsedReason.data;
   if (status === "DENIED" && !reason) return { error: "Give a short reason for denying it." };
 
   const before = await prisma.supplyRequest.findUnique({ where: { id: requestId } });
@@ -135,7 +137,9 @@ export async function cancelSupplyRequest(
   formData: FormData,
 ): Promise<FormState> {
   const session = await requireSession();
-  const reason = reasonSchema.parse(formData.get("reason") ?? "");
+  const parsedReason = reasonSchema.safeParse(formData.get("reason") ?? "");
+  if (!parsedReason.success) return { error: "Keep the reason under 500 characters." };
+  const reason = parsedReason.data;
 
   const before = await prisma.supplyRequest.findUnique({ where: { id: requestId } });
   if (!before) return { error: "This request no longer exists." };
