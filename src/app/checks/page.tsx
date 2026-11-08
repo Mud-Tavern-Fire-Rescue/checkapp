@@ -122,10 +122,28 @@ function GroupCard({ group }: { group: Group }) {
 export default async function ChecksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ submitted?: string; submission?: string }>;
 }) {
-  await requireSession();
-  const { submitted } = await searchParams;
+  const session = await requireSession();
+  const { submitted, submission: submissionId } = await searchParams;
+
+  // After a failed check, list its failed items so the member can open a
+  // work order for each with one tap. Only for the member's own check.
+  const failedItems =
+    submitted === "FAIL" && submissionId
+      ? await prisma.checkItemResult.findMany({
+          where: {
+            submissionId,
+            status: "FAIL",
+            submission: { submittedById: session.user.id },
+          },
+          include: {
+            checklistItem: { select: { label: true, section: true, sortOrder: true } },
+            workOrders: { take: 1, select: { id: true } },
+          },
+        })
+      : [];
+  failedItems.sort((a, b) => a.checklistItem.sortOrder - b.checklistItem.sortOrder);
 
   const groups = await getGroups();
   const apparatus = groups.filter((g) => g.kind === "apparatus");
@@ -141,9 +159,39 @@ export default async function ChecksPage({
         </p>
       )}
       {submitted === "FAIL" && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
-          Check saved with failures. Officers have been notified.
-        </p>
+        <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p>Check saved with failures. Officers have been notified.</p>
+          {failedItems.length > 0 && (
+            <>
+              <p className="mt-2">
+                If something is missing or damaged, open a work order so it&apos;s tracked until
+                it&apos;s fixed:
+              </p>
+              <ul className="mt-2 flex flex-col gap-2">
+                {failedItems.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-gray-900">
+                      {r.checklistItem.section && `${r.checklistItem.section}: `}
+                      {r.checklistItem.label}
+                    </span>
+                    {r.workOrders[0] ? (
+                      <Link href={`/work-orders/${r.workOrders[0].id}`} className="underline">
+                        View work order
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/work-orders/new?result=${r.id}`}
+                        className="rounded-md border border-red-300 bg-white px-3 py-1 font-medium text-red-800 hover:bg-red-100"
+                      >
+                        Create work order
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
       )}
 
       {groups.length === 0 && (

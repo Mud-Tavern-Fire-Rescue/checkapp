@@ -43,6 +43,11 @@ export default function PrivacyPage() {
             permanent record and are not deleted.
           </li>
           <li>
+            <strong>Work orders you open or update:</strong>{" "}the vehicle or equipment, the
+            problem, details, dated progress notes, who wrote each, and a history of changes. Work
+            orders are kept as a permanent record and are not deleted.
+          </li>
+          <li>
             <strong>A sign-in cookie</strong>{" "}that keeps you signed in. We use no advertising or
             analytics cookies and no tracking tools.
           </li>

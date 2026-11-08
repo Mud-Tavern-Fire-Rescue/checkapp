@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { InstallCard } from "@/components/InstallCard";
 import { requireSession } from "@/lib/auth-helpers";
 import { DEPARTMENT_TIME_ZONE } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { OUT_OF_SERVICE_BADGE } from "@/lib/work-orders";
 
 export const metadata: Metadata = {
   title: "Vehicle Status | Equipment Checks",
@@ -47,6 +49,11 @@ export default async function StatusPage() {
           submittedBy: { select: { name: true } },
         },
       },
+      // Open work orders that took the vehicle out of service.
+      workOrders: {
+        where: { status: "OPEN", outOfService: true },
+        select: { id: true },
+      },
     },
   });
 
@@ -65,7 +72,8 @@ export default async function StatusPage() {
       <InstallCard />
       <h1 className="text-2xl font-semibold">Vehicle Status</h1>
       <p className="text-sm text-gray-500">
-        Result of each vehicle&apos;s most recent check, weekly or monthly.
+        Result of each vehicle&apos;s most recent check, weekly or monthly, and whether an open
+        work order has taken it out of service.
       </p>
 
       <div className="overflow-hidden rounded-md border border-gray-200">
@@ -85,6 +93,18 @@ export default async function StatusPage() {
                   {row.label}
                 </th>
                 <td className={cell}>
+                  {row.workOrders.length > 0 && (
+                    <Link
+                      href={
+                        row.workOrders.length === 1
+                          ? `/work-orders/${row.workOrders[0].id}`
+                          : `/work-orders?subject=a:${row.id}&oos=1`
+                      }
+                      className={`mb-1 mr-1 inline-block ${OUT_OF_SERVICE_BADGE}`}
+                    >
+                      Out of service
+                    </Link>
+                  )}
                   {row.last &&
                     (row.last.overallStatus === "FAIL" ? (
                       <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">

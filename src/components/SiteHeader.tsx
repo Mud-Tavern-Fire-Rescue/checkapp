@@ -23,6 +23,9 @@ export async function SiteHeader() {
           <Link href="/status" className="text-gray-600 hover:text-black">
             Status
           </Link>
+          <Link href="/work-orders" className="text-gray-600 hover:text-black">
+            Work Orders
+          </Link>
           <Link href="/supplies" className="text-gray-600 hover:text-black">
             Supplies
           </Link>
