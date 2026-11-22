@@ -94,6 +94,65 @@ export async function setUserActive(
   return {};
 }
 
+const updateUserSchema = z.object({
+  name: nameSchema,
+  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+});
+
+// Officers can fix a person's name or sign-in email. A new email signs them
+// out and unlinks their old Google account, so their next sign-in links the
+// Google account for the new email.
+export async function updateUser(
+  userId: string,
+  _state: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const session = await requireOfficer();
+  const parsed = updateUserSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: firstError(parsed.error) };
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, notificationEmail: true },
+  });
+  if (!user) return { error: "That person no longer exists." };
+
+  const { name, email } = parsed.data;
+  const emailChanged = email !== user.email.toLowerCase();
+  if (emailChanged && userId === session.user.id) {
+    return { error: "Ask another officer to change your own sign-in email." };
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: emailChanged
+          ? {
+              name,
+              email,
+              emailVerified: null,
+              notificationEmail: normalizeNotificationEmail(user.notificationEmail, email),
+            }
+          : { name },
+      }),
+      ...(emailChanged
+        ? [
+            prisma.session.deleteMany({ where: { userId } }),
+            prisma.account.deleteMany({ where: { userId } }),
+          ]
+        : []),
+    ]);
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return { error: "Someone else already uses that email." };
+    }
+    throw error;
+  }
+  refresh();
+  return { message: emailChanged ? "Saved. They'll sign in with the new email." : "Saved." };
+}
+
 // Officers can set where anyone's app emails go (for example a department
 // address instead of the personal Google account they sign in with).
 export async function setUserNotificationEmail(

@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { requireOfficer } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { ActionForm } from "@/components/ActionForm";
-import { addUser, setUserActive, setUserNotificationEmail, setUserRole } from "../actions";
+import {
+  addUser,
+  setUserActive,
+  setUserNotificationEmail,
+  setUserRole,
+  updateUser,
+} from "../actions";
 import { inputClass, primaryButtonClass, smallButtonClass } from "../ui";
 
 export const metadata: Metadata = {
@@ -75,6 +81,42 @@ export default async function PeoplePage() {
                   {user.notificationEmail && (
                     <p className="text-sm text-gray-500">Emails go to {user.notificationEmail}</p>
                   )}
+                  <details className="mt-1 text-sm">
+                    <summary className="cursor-pointer text-gray-500 hover:text-black">
+                      Edit name or email
+                    </summary>
+                    <ActionForm
+                      action={updateUser.bind(null, user.id)}
+                      className="mt-2 flex flex-wrap items-center gap-2"
+                    >
+                      <input
+                        name="name"
+                        required
+                        maxLength={100}
+                        defaultValue={user.name}
+                        aria-label={`Name for ${user.name}`}
+                        className={inputClass}
+                      />
+                      <input
+                        name="email"
+                        type="email"
+                        required
+                        maxLength={254}
+                        defaultValue={user.email}
+                        readOnly={isSelf}
+                        aria-label={`Sign-in email for ${user.name}`}
+                        className={`${inputClass} min-w-64`}
+                      />
+                      <button type="submit" className={smallButtonClass}>
+                        Save
+                      </button>
+                    </ActionForm>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {isSelf
+                        ? "Another officer can change your sign-in email."
+                        : "Changing the email signs them out; they then sign in with the Google account for the new email."}
+                    </p>
+                  </details>
                   <details className="mt-1 text-sm">
                     <summary className="cursor-pointer text-gray-500 hover:text-black">
                       {user.notificationEmail ? "Change notification email" : "Set notification email"}
